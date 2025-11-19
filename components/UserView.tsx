@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
-import { Search, Download, Lock, Menu, Settings, Globe, PlayCircle, Link as LinkIcon, Clock, Sparkles, X, ChevronRight, Send, Moon, Sun, Image as ImageIcon } from 'lucide-react';
+import { Search, Download, Lock, Menu, Globe, PlayCircle, Link as LinkIcon, Clock, Sparkles, X, ChevronRight, Send, Moon, Sun, Image as ImageIcon } from 'lucide-react';
 import { collection, query, getDocs, orderBy } from 'firebase/firestore';
 import { db } from '../firebase';
 import { Category, FileItem, AppSettings } from '../types';
@@ -72,7 +71,6 @@ const UserView: React.FC<Props> = ({ settings }) => {
   
   const [unlockingId, setUnlockingId] = useState<string | null>(null);
   const [adsProgress, setAdsProgress] = useState<{[key: string]: number}>({}); 
-  // New State for Persistent Unlocked Files
   const [unlockedFiles, setUnlockedFiles] = useState<string[]>([]);
   
   const [processingId, setProcessingId] = useState<string | null>(null);
@@ -84,8 +82,8 @@ const UserView: React.FC<Props> = ({ settings }) => {
   const processingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const T = translations[lang];
 
-  // Use settings values or fallback
-  const appName = settings.appName || "Tech By Rubel";
+  // Generic fallback
+  const appName = settings.appName || "File Share";
   const heroTitle = settings.heroTitle || "Premium Files";
   const heroSubtitle = settings.heroSubtitle || "Unlock exclusive content freely";
   const zoneId = settings.monetagZoneId || "10174286";
@@ -97,7 +95,6 @@ const UserView: React.FC<Props> = ({ settings }) => {
       setShowLangModal(false);
     }
 
-    // Load unlocked files from local storage
     const savedUnlocked = JSON.parse(localStorage.getItem('unlockedFiles') || '[]');
     setUnlockedFiles(savedUnlocked);
 
@@ -157,13 +154,11 @@ const UserView: React.FC<Props> = ({ settings }) => {
   };
 
   const handleUnlock = async (file: FileItem) => {
-    // 1. If already unlocked (persistent), open link
     if (unlockedFiles.includes(file.id)) {
         window.open(file.downloadLink, '_blank');
         return;
     }
 
-    // 2. If not premium (free), open link
     if (!file.isPremium) {
       window.open(file.downloadLink, '_blank');
       return;
@@ -172,7 +167,6 @@ const UserView: React.FC<Props> = ({ settings }) => {
     const required = file.adsRequired || 1;
     const current = adsProgress[file.id] || 0;
 
-    // 3. If already finished progress in this session (safety check)
     if (current >= required) {
         markAsUnlocked(file.id);
         window.open(file.downloadLink, '_blank');
@@ -183,26 +177,31 @@ const UserView: React.FC<Props> = ({ settings }) => {
 
     try {
         const funcName = `show_${zoneId}`;
+        // Add a small timeout logic if function is not immediately available (race condition protection)
+        let attempts = 0;
+        while (typeof window[funcName] !== 'function' && attempts < 5) {
+           await new Promise(r => setTimeout(r, 200));
+           attempts++;
+        }
+
         if (typeof window[funcName] === 'function') {
             await window[funcName]();
         } else {
-            console.warn(`Ad function ${funcName} not found. Fallback.`);
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            console.warn(`Ad function ${funcName} missing. Simulating fallback.`);
+            // Fallback delay if ad blocker or script fail
+            await new Promise(resolve => setTimeout(resolve, 1500));
         }
 
         setUnlockingId(null);
 
         const nextCount = current + 1;
         
-        // CRITICAL: If this is the LAST ad, SKIP the timer and UNLOCK PERMANENTLY
+        // LOGIC: If this is the LAST ad, skip the timer.
         if (nextCount >= required) {
-            setAdsProgress(prevProg => ({
-                ...prevProg,
-                [file.id]: nextCount
-            }));
+            setAdsProgress(prevProg => ({ ...prevProg, [file.id]: nextCount }));
             markAsUnlocked(file.id);
         } else {
-            // Intermediate ad: Show 10s timer
+            // Intermediate step: Show timer
             setProcessingId(file.id);
             setProcessingTime(10);
 
@@ -211,10 +210,7 @@ const UserView: React.FC<Props> = ({ settings }) => {
                 setProcessingTime((prev) => {
                     if (prev <= 1) {
                         if (processingTimerRef.current) clearInterval(processingTimerRef.current);
-                        setAdsProgress(prevProg => ({
-                            ...prevProg,
-                            [file.id]: (prevProg[file.id] || 0) + 1
-                        }));
+                        setAdsProgress(prevProg => ({ ...prevProg, [file.id]: (prevProg[file.id] || 0) + 1 }));
                         setProcessingId(null);
                         return 0;
                     }
@@ -231,7 +227,7 @@ const UserView: React.FC<Props> = ({ settings }) => {
   };
 
   const getButtonState = (file: FileItem) => {
-      if (unlockedFiles.includes(file.id)) return 'download'; // Persistent unlock check
+      if (unlockedFiles.includes(file.id)) return 'download';
       if (unlockingId === file.id) return 'loading';
       if (processingId === file.id) return 'processing';
       if (!file.isPremium) return 'download'; 
@@ -242,11 +238,11 @@ const UserView: React.FC<Props> = ({ settings }) => {
   };
 
   return (
-    <div className="min-h-screen transition-colors duration-300 font-sans selection:bg-blue-500/30">
-      {/* iOS Glass Header */}
+    <div className="min-h-screen font-sans selection:bg-blue-500/30 pb-safe">
+      {/* Header */}
       <motion.header 
         initial={{ y: -100 }} animate={{ y: 0 }}
-        className="fixed top-0 left-0 right-0 h-16 glass z-40 flex items-center justify-between px-5"
+        className="fixed top-0 left-0 right-0 h-16 glass z-40 flex items-center justify-between px-5 shadow-sm"
       >
          <div className="flex items-center gap-3">
             <div className="bg-gradient-to-br from-blue-500 to-indigo-600 p-2 rounded-xl shadow-lg shadow-blue-500/20">
@@ -264,13 +260,13 @@ const UserView: React.FC<Props> = ({ settings }) => {
          </button>
       </motion.header>
       
-      {/* Menu Drawer */}
+      {/* Sidebar */}
       <AnimatePresence>
         {isMenuOpen && (
              <>
                 <motion.div 
                     initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                    className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50"
+                    className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50"
                     onClick={() => setIsMenuOpen(false)}
                 />
                 <motion.div 
@@ -303,10 +299,10 @@ const UserView: React.FC<Props> = ({ settings }) => {
         )}
       </AnimatePresence>
 
+      {/* Main Content */}
       <div className="pt-24 px-5 pb-32 max-w-4xl mx-auto">
-        {/* Hero Search */}
         <motion.div 
-            initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
+            initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
             className="mb-8"
         >
             <h2 className="text-3xl font-extrabold mb-1 tracking-tight">{heroTitle}</h2>
@@ -348,7 +344,7 @@ const UserView: React.FC<Props> = ({ settings }) => {
           </div>
         </div>
 
-        {/* Grid */}
+        {/* File Grid */}
         <div className="grid gap-6 md:grid-cols-2">
             <AnimatePresence mode='popLayout'>
               {filteredFiles.map((file) => {
@@ -365,21 +361,21 @@ const UserView: React.FC<Props> = ({ settings }) => {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, scale: 0.9 }}
                       transition={{ type: 'spring', damping: 20 }}
-                      className="bg-white dark:bg-[#1C1C1E] rounded-3xl p-4 shadow-ios hover:shadow-ios-hover transition-shadow relative overflow-hidden group border border-transparent dark:border-gray-800"
+                      className="bg-white dark:bg-[#1C1C1E] rounded-3xl p-4 shadow-ios hover:shadow-ios-hover transition-all relative overflow-hidden group border border-transparent dark:border-gray-800"
                   >
                       {/* Card Image */}
                       <div className="aspect-[16/9] rounded-2xl overflow-hidden bg-gray-100 dark:bg-gray-800 mb-4 relative flex items-center justify-center">
                           <img 
                             src={file.imageUrl} 
                             alt={file.title} 
-                            className="w-full h-full object-cover object-center transform group-hover:scale-105 transition-transform duration-500" 
+                            className="w-full h-full object-cover object-center transform group-hover:scale-105 transition-transform duration-700" 
                             onError={(e) => {
                                 e.currentTarget.style.display = 'none';
                                 e.currentTarget.parentElement?.classList.add('bg-gray-200', 'dark:bg-gray-700');
                             }}
                           />
-                          {/* Fallback Icon behind image */}
-                          <ImageIcon className="absolute text-gray-300 dark:text-gray-600 w-12 h-12 -z-10" />
+                          {/* Fallback Icon behind image - Visible only if img fails or loads slow */}
+                          <ImageIcon className="absolute text-gray-300 dark:text-gray-600 w-12 h-12 -z-10 opacity-50" />
                           
                           {file.badgeText && (
                               <div className="absolute top-3 left-3 bg-white/90 dark:bg-black/80 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-extrabold tracking-wider uppercase shadow-sm text-slate-900 dark:text-white z-20">
@@ -394,8 +390,8 @@ const UserView: React.FC<Props> = ({ settings }) => {
                       </div>
 
                       <div className="px-1">
-                          <h3 className="text-lg font-bold leading-tight mb-1 text-slate-900 dark:text-white">{file.title}</h3>
-                          <p className="text-gray-500 dark:text-gray-400 text-sm font-medium mb-4">{file.subtitle}</p>
+                          <h3 className="text-lg font-bold leading-tight mb-1 text-slate-900 dark:text-white truncate">{file.title}</h3>
+                          <p className="text-gray-500 dark:text-gray-400 text-sm font-medium mb-4 truncate">{file.subtitle}</p>
 
                           <div className="flex gap-3">
                               <motion.button 
@@ -439,13 +435,13 @@ const UserView: React.FC<Props> = ({ settings }) => {
             
             {filteredFiles.length === 0 && (
                 <div className="col-span-full text-center py-20 opacity-50">
-                    <p className="text-lg font-medium">{T.noFiles}</p>
+                    <p className="text-lg font-medium text-gray-500 dark:text-gray-400">{T.noFiles}</p>
                 </div>
             )}
         </div>
       </div>
 
-      {/* Language Selector Modal */}
+      {/* Language Modal */}
       <AnimatePresence>
       {showLangModal && (
         <motion.div 

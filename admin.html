@@ -126,7 +126,7 @@
                 monetagScriptUrl: '//libtl.com/sdk.js',
                 adminTitle: 'Control Center', 
                 welcomeMessage: 'Welcome',
-                appName: "Tech By Rubel", 
+                appName: "File Share", 
                 heroTitle: "Premium Files", 
                 heroSubtitle: "Unlock exclusive content freely"
             });
@@ -390,7 +390,7 @@
                                                     <option value="">Select Category</option>
                                                     {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                                                 </select>
-                                                <input className="w-1/3 bg-gray-50 dark:bg-black/50 p-4 rounded-2xl text-sm outline-none dark:text-white text-center" placeholder="Badge" value={fileForm.badgeText} onChange={e => setFileForm({...fileForm, badgeText: e.target.value})} />
+                                                <input className="w-1/3 bg-gray-50 dark:bg-black/50 p-4 rounded-2xl text-sm outline-none dark:text-white placeholder:text-gray-400" placeholder="Badge" value={fileForm.badgeText} onChange={e => setFileForm({...fileForm, badgeText: e.target.value})} />
                                             </div>
 
                                             <div className="bg-gray-50 dark:bg-black/50 p-4 rounded-2xl">
@@ -455,9 +455,9 @@
                             <motion.div key="set" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-2xl mx-auto bg-white dark:bg-[#1C1C1E] p-8 rounded-3xl shadow-ios border border-white/5 space-y-8">
                                 <div className="space-y-4">
                                     <h4 className="font-bold text-gray-400 text-xs uppercase tracking-wider ml-1">App Interface</h4>
-                                    <input className="w-full bg-gray-50 dark:bg-black/50 p-4 rounded-2xl outline-none dark:text-white" value={settings.appName} onChange={e => setSettings({...settings, appName: e.target.value})} placeholder="App Name" />
-                                    <input className="w-full bg-gray-50 dark:bg-black/50 p-4 rounded-2xl outline-none dark:text-white" value={settings.heroTitle} onChange={e => setSettings({...settings, heroTitle: e.target.value})} placeholder="Hero Title" />
-                                    <input className="w-full bg-gray-50 dark:bg-black/50 p-4 rounded-2xl outline-none dark:text-white" value={settings.heroSubtitle} onChange={e => setSettings({...settings, heroSubtitle: e.target.value})} placeholder="Hero Subtitle" />
+                                    <input className="w-full bg-gray-50 dark:bg-black/50 p-4 rounded-2xl outline-none dark:text-white" value={settings.appName} onChange={e => setSettings({...settings, appName: e.target.value})} placeholder="File Share Pro" />
+                                    <input className="w-full bg-gray-50 dark:bg-black/50 p-4 rounded-2xl outline-none dark:text-white" value={settings.heroTitle} onChange={e => setSettings({...settings, heroTitle: e.target.value})} placeholder="Premium Files" />
+                                    <input className="w-full bg-gray-50 dark:bg-black/50 p-4 rounded-2xl outline-none dark:text-white" value={settings.heroSubtitle} onChange={e => setSettings({...settings, heroSubtitle: e.target.value})} placeholder="Unlock exclusive content..." />
                                 </div>
                                 <div className="space-y-4">
                                     <h4 className="font-bold text-gray-400 text-xs uppercase tracking-wider ml-1">Ads Integration (Monetag)</h4>

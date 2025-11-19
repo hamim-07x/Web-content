@@ -26,7 +26,7 @@ const AdminPanel: React.FC<Props> = ({ user }) => {
       monetagScriptUrl: '//libtl.com/sdk.js',
       adminTitle: 'Control Center', 
       welcomeMessage: 'Welcome',
-      appName: "Tech By Rubel",
+      appName: "File Share",
       heroTitle: "Premium Files",
       heroSubtitle: "Unlock exclusive content freely"
   });
@@ -459,7 +459,7 @@ const AdminPanel: React.FC<Props> = ({ user }) => {
                             <h4 className="font-bold text-gray-500 text-sm">Interface</h4>
                             <div>
                                 <label className="block text-xs font-bold text-gray-400 mb-1 ml-1">App Name</label>
-                                <input className="w-full bg-white dark:bg-[#1C1C1E] p-3 rounded-xl text-sm font-medium outline-none dark:text-white" value={settings.appName} onChange={e => setSettings({...settings, appName: e.target.value})} placeholder="Tech By Rubel" />
+                                <input className="w-full bg-white dark:bg-[#1C1C1E] p-3 rounded-xl text-sm font-medium outline-none dark:text-white" value={settings.appName} onChange={e => setSettings({...settings, appName: e.target.value})} placeholder="File Share Pro" />
                             </div>
                             <div>
                                 <label className="block text-xs font-bold text-gray-400 mb-1 ml-1">Hero Title</label>
