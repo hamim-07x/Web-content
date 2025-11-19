@@ -43,7 +43,7 @@
       #loading-overlay { position: fixed; inset: 0; background: #000; z-index: 50; display: flex; align-items: center; justify-content: center; color: white; transition: opacity 0.5s; }
     </style>
 
-    <!-- Import Maps: STRICT DEPENDENCY SHARING FIX -->
+    <!-- Import Maps: Switched to esm.sh for reliable dependency resolution -->
     <script type="importmap">
     {
       "imports": {
@@ -52,10 +52,10 @@
         "react-dom/client": "https://esm.sh/react-dom@18.2.0/client?deps=react@18.2.0",
         "framer-motion": "https://esm.sh/framer-motion@10.18.0?deps=react@18.2.0,react-dom@18.2.0",
         "lucide-react": "https://esm.sh/lucide-react@0.344.0?deps=react@18.2.0",
-        "firebase/app": "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js",
-        "firebase/auth": "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js",
-        "firebase/firestore": "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js",
-        "firebase/storage": "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js"
+        "firebase/app": "https://esm.sh/firebase@10.8.0/app",
+        "firebase/auth": "https://esm.sh/firebase@10.8.0/auth",
+        "firebase/firestore": "https://esm.sh/firebase@10.8.0/firestore",
+        "firebase/storage": "https://esm.sh/firebase@10.8.0/storage"
       }
     }
     </script>
@@ -81,10 +81,12 @@
     <!-- Global Error Handler -->
     <script>
         window.onerror = function(msg, url, line, col, error) {
-            if (msg.toLowerCase().includes('script error')) return false;
+            // Ignore resize loop errors
+            if (msg.includes('ResizeObserver')) return true;
+            
             const div = document.getElementById('error-display');
             div.style.display = 'block';
-            div.innerHTML = `<strong>System Error:</strong> ${msg}<br><small>Refresh the page. If using 'file://', switch to a server.</small>`;
+            div.innerHTML = `<strong>System Error:</strong> ${msg}<br><small>Try clearing cache or using a different browser.</small>`;
             document.getElementById('loading-overlay').style.display = 'none';
             return false;
         };
@@ -113,7 +115,15 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
-        const storage = getStorage(app);
+        
+        // Safe Storage Initialization
+        let storage = null;
+        try {
+            storage = getStorage(app);
+        } catch (e) {
+            console.warn("Firebase Storage not available:", e);
+        }
+        
         const ADMIN_UID = "ezx6k9JhkPbqbq9uEEF2anZNd2I3";
 
         // --- MAIN COMPONENT ---
@@ -156,8 +166,11 @@
                 const unsubscribe = onAuthStateChanged(auth, (u) => {
                     setUser(u);
                     setLoading(false);
-                    document.getElementById('loading-overlay').style.opacity = '0';
-                    setTimeout(() => document.getElementById('loading-overlay').style.display = 'none', 500);
+                    const overlay = document.getElementById('loading-overlay');
+                    if (overlay) {
+                        overlay.style.opacity = '0';
+                        setTimeout(() => overlay.style.display = 'none', 500);
+                    }
                     
                     // Check for dark mode preference
                     const savedTheme = localStorage.getItem('theme');
@@ -253,6 +266,10 @@
             };
 
             const handleImageUpload = async (e) => {
+                if (!storage) {
+                    alert("Storage service is not available. Please use 'Link' mode or enable Storage in Firebase Console.");
+                    return;
+                }
                 if (e.target.files && e.target.files[0]) {
                     setUploading(true);
                     try {
