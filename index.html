@@ -43,7 +43,7 @@
       @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 
-    <!-- Import Map: FIXED & STABLE (Strictly React 18 via esm.sh) -->
+    <!-- Import Map: CLEAN & STABLE (React 18 Only) -->
     <script type="importmap">
 {
   "imports": {
@@ -70,7 +70,7 @@
     
     <div id="loading-fallback">
         <div class="spinner mb-4"></div>
-        <p class="text-gray-500 font-medium text-sm animate-pulse">Loading App...</p>
+        <p class="text-gray-500 font-medium text-sm animate-pulse">Loading...</p>
     </div>
     
     <div id="root"></div>
@@ -105,8 +105,6 @@
             auth = getAuth(app);
         } catch(e) {
             console.error("Firebase Init Error", e);
-            // Alert user but don't crash entirely if possible
-            alert("Connection Error. Please refresh.");
         }
 
         // --- TRANSLATIONS ---
