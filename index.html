@@ -39,7 +39,7 @@
       .dark #loading-fallback { background: #000; }
     </style>
 
-    <!-- Import Map: Strictly Controlled Versions -->
+    <!-- Import Map: FIXED & STABLE -->
     <script type="importmap">
 {
   "imports": {
@@ -215,6 +215,7 @@
                     setUnlockingId(null);
                     const nextCount = current + 1;
                     
+                    // LOGIC: If this is the LAST ad, skip the timer.
                     if (nextCount >= required) {
                         setAdsProgress(prev => ({ ...prev, [file.id]: nextCount }));
                         markAsUnlocked(file.id);

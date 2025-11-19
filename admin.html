@@ -30,63 +30,55 @@
       .dark body { background-color: #000000; }
       .glass { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-bottom: 1px solid rgba(0,0,0,0.05); }
       .dark .glass { background: rgba(28, 28, 30, 0.8); border-bottom: 1px solid rgba(255,255,255,0.1); }
-      ::-webkit-scrollbar { width: 0px; background: transparent; }
       
-      @keyframes pulse-border {
-        0% { border-color: rgba(59, 130, 246, 0.5); }
-        50% { border-color: rgba(59, 130, 246, 1); }
-        100% { border-color: rgba(59, 130, 246, 0.5); }
-      }
-      .uploading { animation: pulse-border 1.5s infinite; }
-
-      #error-display { display: none; padding: 20px; background: #fee2e2; color: #991b1b; border-bottom: 1px solid #f87171; font-family: monospace; position: fixed; top: 0; left: 0; right: 0; z-index: 9999; word-break: break-all; }
+      /* Native CSS Animations */
+      .fade-in { animation: fadeIn 0.3s ease-in-out; }
+      .slide-up { animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+      @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+      @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+      
+      .active-tab { background-color: #000; color: #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+      .dark .active-tab { background-color: #fff; color: #000; }
+      
+      #error-display { display: none; padding: 20px; background: #fee2e2; color: #991b1b; border-bottom: 1px solid #f87171; font-family: monospace; position: fixed; top: 0; left: 0; right: 0; z-index: 9999; }
       #loading-overlay { position: fixed; inset: 0; background: #000; z-index: 50; display: flex; align-items: center; justify-content: center; color: white; transition: opacity 0.5s; }
     </style>
 
-    <!-- Import Maps: Switched to esm.sh for reliable dependency resolution -->
+    <!-- Import Map: Using Stable Google CDN for Firebase & ESM.SH for React -->
     <script type="importmap">
     {
       "imports": {
         "react": "https://esm.sh/react@18.2.0",
-        "react-dom": "https://esm.sh/react-dom@18.2.0?deps=react@18.2.0",
         "react-dom/client": "https://esm.sh/react-dom@18.2.0/client?deps=react@18.2.0",
-        "framer-motion": "https://esm.sh/framer-motion@10.18.0?deps=react@18.2.0,react-dom@18.2.0",
         "lucide-react": "https://esm.sh/lucide-react@0.344.0?deps=react@18.2.0",
-        "firebase/app": "https://esm.sh/firebase@10.8.0/app",
-        "firebase/auth": "https://esm.sh/firebase@10.8.0/auth",
-        "firebase/firestore": "https://esm.sh/firebase@10.8.0/firestore",
-        "firebase/storage": "https://esm.sh/firebase@10.8.0/storage"
+        "firebase/app": "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js",
+        "firebase/auth": "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js",
+        "firebase/firestore": "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js",
+        "firebase/storage": "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js"
       }
     }
     </script>
 
     <!-- Babel for JSX -->
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js" crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </head>
 <body class="bg-[#F2F2F7] dark:bg-black text-slate-900 dark:text-white transition-colors duration-300">
     
     <div id="loading-overlay">
         <div class="text-center">
             <div class="animate-spin w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-            <p class="font-bold animate-pulse">Connecting to Cloud...</p>
+            <p class="font-bold animate-pulse">Connecting...</p>
         </div>
     </div>
 
-    <!-- Error Display Area -->
     <div id="error-display"></div>
-    
-    <!-- App Root -->
     <div id="root"></div>
 
-    <!-- Global Error Handler -->
     <script>
         window.onerror = function(msg, url, line, col, error) {
-            // Ignore resize loop errors
-            if (msg.includes('ResizeObserver')) return true;
-            
             const div = document.getElementById('error-display');
             div.style.display = 'block';
-            div.innerHTML = `<strong>System Error:</strong> ${msg}<br><small>Try clearing cache or using a different browser.</small>`;
+            div.innerHTML = `<strong>App Error:</strong> ${msg}<br><small>Please refresh.</small>`;
             document.getElementById('loading-overlay').style.display = 'none';
             return false;
         };
@@ -100,7 +92,6 @@
         import { getFirestore, collection, addDoc, deleteDoc, updateDoc, doc, getDocs, setDoc, query, orderBy } from 'firebase/firestore';
         import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
         import { Trash2, Plus, LogOut, Settings, Folder, FileText, Edit2, UploadCloud, Check, AlertTriangle, Download, Send, Image as ImageIcon, AlertCircle, Wand2 } from 'lucide-react';
-        import { motion, AnimatePresence } from 'framer-motion';
 
         // --- FIREBASE CONFIG ---
         const firebaseConfig = {
@@ -115,18 +106,11 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
-        
-        // Safe Storage Initialization
         let storage = null;
-        try {
-            storage = getStorage(app);
-        } catch (e) {
-            console.warn("Firebase Storage not available:", e);
-        }
+        try { storage = getStorage(app); } catch (e) { console.warn("Storage init failed", e); }
         
         const ADMIN_UID = "ezx6k9JhkPbqbq9uEEF2anZNd2I3";
 
-        // --- MAIN COMPONENT ---
         const AdminPanel = () => {
             const [user, setUser] = useState(null);
             const [loading, setLoading] = useState(true);
@@ -138,17 +122,10 @@
             const [categories, setCategories] = useState([]);
             const [files, setFiles] = useState([]);
             const [settings, setSettings] = useState({ 
-                id: 'general', 
-                monetagZoneId: '10174286', 
-                monetagScriptUrl: '//libtl.com/sdk.js',
-                adminTitle: 'Control Center', 
-                welcomeMessage: 'Welcome',
-                appName: "File Share Pro",
-                heroTitle: "Premium Files",
-                heroSubtitle: "Unlock exclusive content freely"
+                id: 'general', monetagZoneId: '10174286', monetagScriptUrl: '//libtl.com/sdk.js',
+                appName: "File Share Pro", heroTitle: "Premium Files", heroSubtitle: "Unlock exclusive content freely"
             });
 
-            // UI States
             const [isEditing, setIsEditing] = useState(false);
             const [editingId, setEditingId] = useState(null);
             const [uploading, setUploading] = useState(false);
@@ -167,14 +144,8 @@
                     setUser(u);
                     setLoading(false);
                     const overlay = document.getElementById('loading-overlay');
-                    if (overlay) {
-                        overlay.style.opacity = '0';
-                        setTimeout(() => overlay.style.display = 'none', 500);
-                    }
-                    
-                    // Check for dark mode preference
-                    const savedTheme = localStorage.getItem('theme');
-                    if (savedTheme === 'dark') document.documentElement.classList.add('dark');
+                    if (overlay) { overlay.style.opacity = '0'; setTimeout(() => overlay.style.display = 'none', 500); }
+                    if (localStorage.getItem('theme') === 'dark') document.documentElement.classList.add('dark');
                 });
                 return unsubscribe;
             }, []);
@@ -183,22 +154,13 @@
                 if (user?.uid === ADMIN_UID) fetchData();
             }, [user]);
 
-            // Preview Error Reset
             useEffect(() => { setPreviewError(false); }, [fileForm.imageUrl]);
 
-            // AUTO-FIX LINKS
             useEffect(() => {
                 const url = fileForm.imageUrl;
                 if (!url) return;
-
-                // 1. HTML Tag Extract
                 const srcMatch = url.match(/src=["'](.*?)["']/);
-                if (srcMatch && srcMatch[1]) {
-                    setFileForm(prev => ({ ...prev, imageUrl: srcMatch[1] }));
-                    return;
-                }
-
-                // 2. ImgBB Viewer Fix
+                if (srcMatch && srcMatch[1]) { setFileForm(prev => ({ ...prev, imageUrl: srcMatch[1] })); return; }
                 if (url.includes('ibb.co') && !url.includes('i.ibb.co') && !url.includes('<')) {
                     const resolveImgBB = async () => {
                         setResolvingLink(true);
@@ -207,12 +169,9 @@
                             const data = await response.json();
                             if (data.contents) {
                                 const match = data.contents.match(/<meta property="og:image" content="(.*?)"/);
-                                if (match && match[1]) {
-                                    setFileForm(prev => ({ ...prev, imageUrl: match[1] }));
-                                }
+                                if (match && match[1]) setFileForm(prev => ({ ...prev, imageUrl: match[1] }));
                             }
-                        } catch (e) { console.error("Link resolve error", e); } 
-                        finally { setResolvingLink(false); }
+                        } catch (e) {} finally { setResolvingLink(false); }
                     };
                     const timer = setTimeout(resolveImgBB, 800);
                     return () => clearTimeout(timer);
@@ -234,8 +193,7 @@
                 e.preventDefault();
                 setLoadingAuth(true);
                 try { await signInWithEmailAndPassword(auth, email, password); } 
-                catch (err) { alert("Access Denied: Invalid Credentials"); } 
-                finally { setLoadingAuth(false); }
+                catch (err) { alert("Access Denied"); } finally { setLoadingAuth(false); }
             };
 
             const handleFileSubmit = async (e) => {
@@ -266,10 +224,7 @@
             };
 
             const handleImageUpload = async (e) => {
-                if (!storage) {
-                    alert("Storage service is not available. Please use 'Link' mode or enable Storage in Firebase Console.");
-                    return;
-                }
+                if (!storage) { alert("Storage unavailable."); return; }
                 if (e.target.files && e.target.files[0]) {
                     setUploading(true);
                     try {
@@ -278,8 +233,7 @@
                         await uploadBytes(storageRef, file);
                         const url = await getDownloadURL(storageRef);
                         setFileForm(prev => ({ ...prev, imageUrl: url }));
-                    } catch (e) { alert("Upload failed: " + e.message); } 
-                    finally { setUploading(false); }
+                    } catch (e) { alert("Upload failed"); } finally { setUploading(false); }
                 }
             };
 
@@ -301,26 +255,26 @@
 
             const saveSettings = async () => {
                 await setDoc(doc(db, "settings", "general"), settings);
-                alert("Configuration Saved Successfully");
+                alert("Saved!");
             };
 
             if (loading) return null;
 
             if (!user || user.uid !== ADMIN_UID) {
                 return (
-                    <div className="min-h-screen flex items-center justify-center bg-[#F2F2F7] dark:bg-black p-6">
+                    <div className="min-h-screen flex items-center justify-center bg-[#F2F2F7] dark:bg-black p-6 fade-in">
                         <div className="bg-white dark:bg-[#1C1C1E] p-8 rounded-3xl shadow-2xl w-full max-w-md border border-white/10">
                             <div className="text-center mb-8">
                                 <div className="w-20 h-20 bg-black dark:bg-white text-white dark:text-black rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-glow">
                                     <Settings size={40} />
                                 </div>
-                                <h2 className="text-3xl font-bold text-slate-900 dark:text-white">Admin Access</h2>
+                                <h2 className="text-3xl font-bold text-slate-900 dark:text-white">Admin</h2>
                             </div>
                             <form onSubmit={handleLogin} className="space-y-4">
-                                <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full bg-gray-100 dark:bg-black/50 p-4 rounded-2xl font-medium outline-none focus:ring-2 ring-blue-500 dark:text-white placeholder:text-gray-400" placeholder="Email" required />
-                                <input type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full bg-gray-100 dark:bg-black/50 p-4 rounded-2xl font-medium outline-none focus:ring-2 ring-blue-500 dark:text-white placeholder:text-gray-400" placeholder="Password" required />
-                                <button type="submit" disabled={loadingAuth} className="w-full bg-black dark:bg-white text-white dark:text-black py-4 rounded-2xl font-bold text-lg shadow-lg hover:scale-[1.02] transition-transform">
-                                    {loadingAuth ? 'Verifying...' : 'Unlock Dashboard'}
+                                <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full bg-gray-100 dark:bg-black/50 p-4 rounded-2xl outline-none dark:text-white" placeholder="Email" required />
+                                <input type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full bg-gray-100 dark:bg-black/50 p-4 rounded-2xl outline-none dark:text-white" placeholder="Password" required />
+                                <button type="submit" disabled={loadingAuth} className="w-full bg-black dark:bg-white text-white dark:text-black py-4 rounded-2xl font-bold hover:opacity-90 transition-opacity">
+                                    {loadingAuth ? 'Verifying...' : 'Enter'}
                                 </button>
                             </form>
                         </div>
@@ -329,23 +283,22 @@
             }
 
             return (
-                <div className="min-h-screen bg-[#F2F2F7] dark:bg-black pb-20 font-sans text-slate-900 dark:text-white transition-colors duration-300">
-                    <header className="sticky top-0 z-30 glass px-6 py-4 flex justify-between items-center shadow-sm bg-white/70 dark:bg-black/70 backdrop-blur-xl border-b border-gray-200 dark:border-white/10">
+                <div className="min-h-screen bg-[#F2F2F7] dark:bg-black pb-20 font-sans text-slate-900 dark:text-white transition-colors duration-300 fade-in">
+                    <header className="sticky top-0 z-30 glass px-6 py-4 flex justify-between items-center shadow-sm bg-white/70 dark:bg-black/70 backdrop-blur-xl">
                         <div className="flex items-center gap-3">
                             <div className="bg-black dark:bg-white p-2 rounded-xl text-white dark:text-black"><Settings size={20}/></div>
                             <h1 className="font-bold text-xl tracking-tight">Control Center</h1>
                         </div>
-                        <button onClick={() => signOut(auth)} className="w-10 h-10 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-full flex items-center justify-center hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors">
+                        <button onClick={() => signOut(auth)} className="w-10 h-10 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-full flex items-center justify-center hover:opacity-80">
                             <LogOut size={18} />
                         </button>
                     </header>
 
-                    <main className="max-w-5xl mx-auto p-4 md:p-6">
+                    <main className="max-w-5xl mx-auto p-4 md:p-6 slide-up">
                         <div className="flex p-1.5 bg-white/80 dark:bg-[#1C1C1E]/80 backdrop-blur rounded-2xl mb-8 shadow-sm border border-gray-200/50 dark:border-white/10">
                             {['files', 'categories', 'settings'].map(tab => (
-                                <button key={tab} onClick={() => setActiveTab(tab)} className={`flex-1 py-3 rounded-xl font-bold text-sm capitalize transition-all relative ${activeTab === tab ? 'text-white dark:text-black shadow-lg' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5'}`}>
-                                    {activeTab === tab && <motion.div layoutId="activeTab" className="absolute inset-0 bg-black dark:bg-white rounded-xl" />}
-                                    <span className="relative z-10 flex items-center justify-center gap-2">
+                                <button key={tab} onClick={() => setActiveTab(tab)} className={`flex-1 py-3 rounded-xl font-bold text-sm capitalize transition-all ${activeTab === tab ? 'active-tab' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5'}`}>
+                                    <span className="flex items-center justify-center gap-2">
                                         {tab === 'files' && <FileText size={16} />}
                                         {tab === 'categories' && <Folder size={16} />}
                                         {tab === 'settings' && <Settings size={16} />}
@@ -355,166 +308,154 @@
                             ))}
                         </div>
 
-                        <AnimatePresence mode="wait">
-                            {activeTab === 'files' && (
-                                <motion.div key="files" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="grid lg:grid-cols-12 gap-6">
-                                    <div className="lg:col-span-5 xl:col-span-4 space-y-6">
-                                        <div className={`bg-white dark:bg-[#1C1C1E] p-6 rounded-3xl shadow-ios border-2 transition-all ${isEditing ? 'border-blue-500 ring-4 ring-blue-500/10' : 'border-transparent dark:border-white/5'}`}>
-                                            <div className="flex justify-between items-center mb-6">
-                                                <h3 className="font-bold text-xl flex items-center gap-2">
-                                                    {isEditing ? <Edit2 size={20} className="text-blue-500"/> : <Plus size={20} className="text-green-500"/>}
-                                                    {isEditing ? 'Edit File' : 'New File'}
-                                                </h3>
-                                                {isEditing && <button onClick={resetFileForm} className="text-xs font-bold text-red-500 bg-red-50 dark:bg-red-900/30 px-2 py-1 rounded-md">CANCEL</button>}
+                        {activeTab === 'files' && (
+                            <div className="grid lg:grid-cols-12 gap-6 fade-in">
+                                <div className="lg:col-span-5 xl:col-span-4 space-y-6">
+                                    <div className={`bg-white dark:bg-[#1C1C1E] p-6 rounded-3xl shadow-ios border-2 transition-all ${isEditing ? 'border-blue-500 ring-4 ring-blue-500/10' : 'border-transparent dark:border-white/5'}`}>
+                                        <div className="flex justify-between items-center mb-6">
+                                            <h3 className="font-bold text-xl flex items-center gap-2">
+                                                {isEditing ? <Edit2 size={20} className="text-blue-500"/> : <Plus size={20} className="text-green-500"/>}
+                                                {isEditing ? 'Edit File' : 'New File'}
+                                            </h3>
+                                            {isEditing && <button onClick={resetFileForm} className="text-xs font-bold text-red-500 bg-red-50 dark:bg-red-900/30 px-2 py-1 rounded-md">CANCEL</button>}
+                                        </div>
+                                        <form onSubmit={handleFileSubmit} className="space-y-4">
+                                            <div className="space-y-2">
+                                                <input className="w-full bg-gray-50 dark:bg-black/50 p-4 rounded-2xl font-semibold outline-none dark:text-white" placeholder="Title" value={fileForm.title} onChange={e => setFileForm({...fileForm, title: e.target.value})} required />
+                                                <input className="w-full bg-gray-50 dark:bg-black/50 p-4 rounded-2xl text-sm outline-none dark:text-white" placeholder="Subtitle" value={fileForm.subtitle} onChange={e => setFileForm({...fileForm, subtitle: e.target.value})} />
                                             </div>
-                                            <form onSubmit={handleFileSubmit} className="space-y-4">
-                                                <div className="space-y-2">
-                                                    <input className="w-full bg-gray-50 dark:bg-black/50 p-4 rounded-2xl font-semibold outline-none focus:bg-white dark:focus:bg-black focus:ring-2 ring-blue-500 transition-all dark:text-white placeholder:text-gray-400" placeholder="Title" value={fileForm.title} onChange={e => setFileForm({...fileForm, title: e.target.value})} required />
-                                                    <input className="w-full bg-gray-50 dark:bg-black/50 p-4 rounded-2xl text-sm outline-none focus:bg-white dark:focus:bg-black focus:ring-2 ring-blue-500 transition-all dark:text-white placeholder:text-gray-400" placeholder="Subtitle" value={fileForm.subtitle} onChange={e => setFileForm({...fileForm, subtitle: e.target.value})} />
+                                            <div className="bg-gray-50 dark:bg-black/50 p-4 rounded-2xl">
+                                                <div className="flex gap-1 bg-gray-200 dark:bg-white/10 p-1 rounded-xl mb-3">
+                                                    <button type="button" onClick={() => setThumbMode('upload')} className={`flex-1 py-1.5 text-xs font-bold rounded-lg ${thumbMode === 'upload' ? 'bg-white dark:bg-[#1C1C1E]' : 'text-gray-500'}`}>Upload</button>
+                                                    <button type="button" onClick={() => setThumbMode('link')} className={`flex-1 py-1.5 text-xs font-bold rounded-lg ${thumbMode === 'link' ? 'bg-white dark:bg-[#1C1C1E]' : 'text-gray-500'}`}>Link</button>
                                                 </div>
-                                                <div className="bg-gray-50 dark:bg-black/50 p-4 rounded-2xl">
-                                                    <div className="flex gap-1 bg-gray-200 dark:bg-white/10 p-1 rounded-xl mb-3">
-                                                        <button type="button" onClick={() => setThumbMode('upload')} className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all ${thumbMode === 'upload' ? 'bg-white dark:bg-[#1C1C1E] shadow-sm' : 'text-gray-500 dark:text-gray-400'}`}>Upload</button>
-                                                        <button type="button" onClick={() => setThumbMode('link')} className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all ${thumbMode === 'link' ? 'bg-white dark:bg-[#1C1C1E] shadow-sm' : 'text-gray-500 dark:text-gray-400'}`}>Link</button>
+                                                {thumbMode === 'upload' ? (
+                                                    <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-xl cursor-pointer border-blue-300 hover:bg-blue-50 dark:border-blue-800 dark:hover:bg-blue-900/20">
+                                                        <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" disabled={uploading} />
+                                                        {uploading ? <span className="text-xs font-bold animate-pulse">Uploading...</span> : <div className="text-center text-gray-500 dark:text-gray-400"><UploadCloud className="mx-auto mb-1 text-blue-400"/> <span className="text-xs">Tap</span></div>}
+                                                    </label>
+                                                ) : (
+                                                    <div className="relative">
+                                                        <input className="w-full bg-white dark:bg-[#1C1C1E] p-3 pr-8 rounded-xl text-sm outline-none dark:text-white border border-gray-200 dark:border-white/10" placeholder="Paste Link or HTML" value={fileForm.imageUrl} onChange={e => setFileForm({...fileForm, imageUrl: e.target.value})} />
+                                                        {resolvingLink && <div className="absolute right-3 top-3 text-blue-500 animate-spin"><Wand2 size={16} /></div>}
                                                     </div>
-                                                    {thumbMode === 'upload' ? (
-                                                        <label className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-xl cursor-pointer transition-colors overflow-hidden relative ${uploading ? 'bg-gray-100 border-gray-400' : 'border-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 dark:border-blue-800'}`}>
-                                                            <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" disabled={uploading} />
-                                                            {uploading ? <span className="text-xs font-bold animate-pulse">Uploading...</span> : <div className="text-center text-gray-500 dark:text-gray-400"><UploadCloud className="mx-auto mb-1 text-blue-400"/> <span className="text-xs">Tap to Upload</span></div>}
-                                                        </label>
-                                                    ) : (
-                                                        <div className="space-y-2">
-                                                            <div className="relative">
-                                                                <input className="w-full bg-white dark:bg-[#1C1C1E] p-3 pr-8 rounded-xl text-sm outline-none border border-gray-200 dark:border-white/10 dark:text-white" placeholder="Paste Link or HTML" value={fileForm.imageUrl} onChange={e => setFileForm({...fileForm, imageUrl: e.target.value})} />
-                                                                {resolvingLink && <div className="absolute right-3 top-3 text-blue-500 animate-spin"><Wand2 size={16} /></div>}
-                                                            </div>
-                                                        </div>
-                                                    )}
-                                                    {fileForm.imageUrl && !previewError && !resolvingLink && (
-                                                        <div className="mt-3 flex items-center gap-2 p-2 bg-white dark:bg-[#1C1C1E] rounded-xl border border-gray-100 dark:border-white/10">
-                                                            <img src={fileForm.imageUrl} alt="Preview" className="w-10 h-10 rounded-lg object-cover object-center bg-gray-100 dark:bg-gray-800" onError={() => setPreviewError(true)}/>
-                                                            <span className="text-[10px] text-green-600 font-bold flex items-center gap-1"><Check size={10}/> Image Set</span>
-                                                        </div>
-                                                    )}
-                                                    {previewError && !resolvingLink && <div className="mt-3 flex items-center gap-2 p-2 bg-red-50 dark:bg-red-900/20 rounded-xl"><AlertCircle size={16} className="text-red-500"/><span className="text-[10px] text-red-500 font-bold">Preview Failed</span></div>}
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <input className="w-full bg-gray-50 dark:bg-black/50 p-4 rounded-2xl font-mono text-sm outline-none focus:bg-white dark:focus:bg-black focus:ring-2 ring-blue-500 dark:text-white placeholder:text-gray-400" placeholder="Download Link" value={fileForm.downloadLink} onChange={e => setFileForm({...fileForm, downloadLink: e.target.value})} required />
-                                                    <div className="flex gap-2">
-                                                        <input className="w-full bg-gray-50 dark:bg-black/50 p-4 rounded-2xl text-sm outline-none focus:bg-white dark:focus:bg-black focus:ring-2 ring-blue-500 dark:text-white placeholder:text-gray-400" placeholder="Direct Link (Optional)" value={fileForm.directLink || ''} onChange={e => setFileForm({...fileForm, directLink: e.target.value})} />
+                                                )}
+                                                {fileForm.imageUrl && !previewError && !resolvingLink && (
+                                                    <div className="mt-3 flex items-center gap-2 p-2 bg-white dark:bg-[#1C1C1E] rounded-xl border border-gray-100 dark:border-white/10">
+                                                        <img src={fileForm.imageUrl} alt="Preview" className="w-10 h-10 rounded-lg object-cover object-center" onError={() => setPreviewError(true)}/>
+                                                        <span className="text-[10px] text-green-600 font-bold flex items-center gap-1"><Check size={10}/> OK</span>
                                                     </div>
-                                                </div>
-                                                <div className="bg-gray-50 dark:bg-black/50 p-4 rounded-2xl">
-                                                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-2">Action Button</label>
-                                                    <div className="flex gap-2">
-                                                        <button type="button" onClick={() => setFileForm({...fileForm, actionType: 'download'})} className={`flex-1 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition-all ${fileForm.actionType === 'download' || !fileForm.actionType ? 'bg-black dark:bg-white text-white dark:text-black shadow-lg' : 'bg-white dark:bg-[#1C1C1E] text-gray-500'}`}><Download size={14}/> Download</button>
-                                                        <button type="button" onClick={() => setFileForm({...fileForm, actionType: 'subscribe'})} className={`flex-1 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition-all ${fileForm.actionType === 'subscribe' ? 'bg-[#229ED9] text-white shadow-lg' : 'bg-white dark:bg-[#1C1C1E] text-gray-500'}`}><Send size={14}/> Telegram</button>
-                                                    </div>
-                                                </div>
-                                                <div className="flex gap-3">
-                                                    <select className="flex-1 bg-gray-50 dark:bg-black/50 p-4 rounded-2xl text-sm outline-none dark:text-white" value={fileForm.categoryId} onChange={e => setFileForm({...fileForm, categoryId: e.target.value})}>
-                                                        <option value="">Select Category</option>
-                                                        {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                                                    </select>
-                                                    <input className="w-1/3 bg-gray-50 dark:bg-black/50 p-4 rounded-2xl text-sm outline-none dark:text-white placeholder:text-gray-400" placeholder="Badge" value={fileForm.badgeText} onChange={e => setFileForm({...fileForm, badgeText: e.target.value})} />
-                                                </div>
-                                                <div className="bg-gray-50 dark:bg-black/50 p-4 rounded-2xl">
-                                                    <div className="flex justify-between items-center mb-3">
-                                                        <span className="font-bold text-sm text-gray-700 dark:text-gray-300">Premium (Ads)</span>
-                                                        <input type="checkbox" className="w-6 h-6 accent-black rounded-md" checked={fileForm.isPremium} onChange={e => setFileForm({...fileForm, isPremium: e.target.checked})} />
-                                                    </div>
-                                                    {fileForm.isPremium && (
-                                                        <div>
-                                                            <div className="flex justify-between text-xs font-bold text-gray-500 mb-2"><span>Ads Required</span><span className="text-black dark:text-white text-lg">{fileForm.adsRequired || 1}</span></div>
-                                                            <input type="range" min="1" max="50" value={fileForm.adsRequired || 1} onChange={e => setFileForm({...fileForm, adsRequired: parseInt(e.target.value)})} className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full appearance-none accent-black dark:accent-white" />
-                                                        </div>
-                                                    )}
-                                                </div>
-                                                <button type="submit" className="w-full bg-black dark:bg-white text-white dark:text-black py-4 rounded-2xl font-bold shadow-lg hover:scale-[1.02] transition-transform">{isEditing ? 'Update File' : 'Publish File'}</button>
-                                            </form>
-                                        </div>
-                                    </div>
-                                    <div className="lg:col-span-7 xl:col-span-8">
-                                        <div className="grid md:grid-cols-2 gap-4">
-                                            {files.map(file => (
-                                                <motion.div layout key={file.id} className="bg-white dark:bg-[#1C1C1E] p-4 rounded-3xl shadow-sm border border-gray-100 dark:border-white/5 flex flex-col justify-between group hover:shadow-ios-hover transition-all">
-                                                    <div className="flex gap-4 mb-4">
-                                                        <div className="w-16 h-16 bg-gray-100 dark:bg-black rounded-2xl overflow-hidden shrink-0 relative flex items-center justify-center">
-                                                            <img src={file.imageUrl} className="w-full h-full object-cover object-center" alt="" onError={(e) => {e.currentTarget.style.display = 'none'; e.currentTarget.parentElement?.classList.add('bg-gray-200', 'dark:bg-gray-800');}}/>
-                                                            <ImageIcon size={24} className="text-gray-400 absolute z-0" />
-                                                        </div>
-                                                        <div className="min-w-0">
-                                                            <h4 className="font-bold text-slate-900 dark:text-white truncate">{file.title}</h4>
-                                                            <p className="text-xs text-gray-500 dark:text-gray-400 truncate mb-1">{file.subtitle}</p>
-                                                            {file.isPremium && <span className="px-2 py-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 text-[10px] font-bold rounded-full">Ads: {file.adsRequired}</span>}
-                                                        </div>
-                                                    </div>
-                                                    <div className="flex gap-2 mt-auto">
-                                                        <button onClick={() => handleEditFile(file)} className="flex-1 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-xl font-bold text-xs hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors">Edit</button>
-                                                        <button onClick={() => setDeleteConfirm({type: 'file', id: file.id})} className="w-10 h-10 flex items-center justify-center bg-red-50 dark:bg-red-900/20 text-red-500 dark:text-red-400 rounded-xl hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors"><Trash2 size={16} /></button>
-                                                    </div>
-                                                </motion.div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </motion.div>
-                            )}
-
-                            {activeTab === 'categories' && (
-                                <motion.div key="cat" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-2xl mx-auto bg-white dark:bg-[#1C1C1E] p-8 rounded-3xl shadow-ios border border-white/5">
-                                    <h3 className="font-bold text-2xl mb-6 dark:text-white">Manage Categories</h3>
-                                    <div className="flex gap-3 mb-8">
-                                        <input className="flex-1 bg-gray-50 dark:bg-black/50 p-4 rounded-2xl outline-none dark:text-white" placeholder="Category Name" value={newCatName} onChange={e => setNewCatName(e.target.value)} />
-                                        <button onClick={addCategory} className="bg-black dark:bg-white text-white dark:text-black px-6 rounded-2xl font-bold"><Plus/></button>
-                                    </div>
-                                    <div className="space-y-2">
-                                        {categories.map(cat => (
-                                            <div key={cat.id} className="flex justify-between items-center p-4 bg-gray-50 dark:bg-black/30 rounded-2xl">
-                                                <span className="font-medium dark:text-white">{cat.name}</span>
-                                                <button onClick={() => setDeleteConfirm({type: 'cat', id: cat.id})} className="text-red-500 bg-white dark:bg-[#1C1C1E] p-2 rounded-xl shadow-sm hover:bg-red-50 transition-colors"><Trash2 size={16}/></button>
+                                                )}
                                             </div>
-                                        ))}
+                                            <input className="w-full bg-gray-50 dark:bg-black/50 p-4 rounded-2xl font-mono text-sm outline-none dark:text-white" placeholder="Download Link" value={fileForm.downloadLink} onChange={e => setFileForm({...fileForm, downloadLink: e.target.value})} required />
+                                            <input className="w-full bg-gray-50 dark:bg-black/50 p-4 rounded-2xl text-sm outline-none dark:text-white" placeholder="Direct Link (Optional)" value={fileForm.directLink || ''} onChange={e => setFileForm({...fileForm, directLink: e.target.value})} />
+                                            <div className="bg-gray-50 dark:bg-black/50 p-4 rounded-2xl">
+                                                <div className="flex gap-2">
+                                                    <button type="button" onClick={() => setFileForm({...fileForm, actionType: 'download'})} className={`flex-1 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1 ${fileForm.actionType === 'download' ? 'bg-black dark:bg-white text-white dark:text-black' : 'bg-white dark:bg-[#1C1C1E] text-gray-500'}`}><Download size={14}/> DL</button>
+                                                    <button type="button" onClick={() => setFileForm({...fileForm, actionType: 'subscribe'})} className={`flex-1 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1 ${fileForm.actionType === 'subscribe' ? 'bg-[#229ED9] text-white' : 'bg-white dark:bg-[#1C1C1E] text-gray-500'}`}><Send size={14}/> TG</button>
+                                                </div>
+                                            </div>
+                                            <div className="flex gap-3">
+                                                <select className="flex-1 bg-gray-50 dark:bg-black/50 p-4 rounded-2xl text-sm outline-none dark:text-white" value={fileForm.categoryId} onChange={e => setFileForm({...fileForm, categoryId: e.target.value})}>
+                                                    <option value="">Category</option>
+                                                    {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                                </select>
+                                                <input className="w-1/3 bg-gray-50 dark:bg-black/50 p-4 rounded-2xl text-sm outline-none dark:text-white" placeholder="Badge" value={fileForm.badgeText} onChange={e => setFileForm({...fileForm, badgeText: e.target.value})} />
+                                            </div>
+                                            <div className="bg-gray-50 dark:bg-black/50 p-4 rounded-2xl">
+                                                <div className="flex justify-between items-center mb-3">
+                                                    <span className="font-bold text-sm text-gray-700 dark:text-gray-300">Premium</span>
+                                                    <input type="checkbox" className="w-6 h-6 accent-black rounded-md" checked={fileForm.isPremium} onChange={e => setFileForm({...fileForm, isPremium: e.target.checked})} />
+                                                </div>
+                                                {fileForm.isPremium && (
+                                                    <div>
+                                                        <div className="flex justify-between text-xs font-bold text-gray-500 mb-2"><span>Ads: {fileForm.adsRequired || 1}</span></div>
+                                                        <input type="range" min="1" max="50" value={fileForm.adsRequired || 1} onChange={e => setFileForm({...fileForm, adsRequired: parseInt(e.target.value)})} className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full appearance-none accent-black dark:accent-white" />
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <button type="submit" className="w-full bg-black dark:bg-white text-white dark:text-black py-4 rounded-2xl font-bold shadow-lg hover:opacity-90">
+                                                {isEditing ? 'Update' : 'Publish'}
+                                            </button>
+                                        </form>
                                     </div>
-                                </motion.div>
-                            )}
+                                </div>
+                                <div className="lg:col-span-7 xl:col-span-8 grid md:grid-cols-2 gap-4">
+                                    {files.map(file => (
+                                        <div key={file.id} className="bg-white dark:bg-[#1C1C1E] p-4 rounded-3xl shadow-sm border border-gray-100 dark:border-white/5 flex flex-col justify-between">
+                                            <div className="flex gap-4 mb-4">
+                                                <div className="w-16 h-16 bg-gray-100 dark:bg-black rounded-2xl overflow-hidden shrink-0 relative flex items-center justify-center">
+                                                    <img src={file.imageUrl} className="w-full h-full object-cover object-center" alt="" onError={(e) => e.target.style.display='none'}/>
+                                                    <ImageIcon size={24} className="text-gray-400 absolute z-0" />
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <h4 className="font-bold text-slate-900 dark:text-white truncate">{file.title}</h4>
+                                                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate mb-1">{file.subtitle}</p>
+                                                    {file.isPremium && <span className="px-2 py-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 text-[10px] font-bold rounded-full">Ads: {file.adsRequired}</span>}
+                                                </div>
+                                            </div>
+                                            <div className="flex gap-2 mt-auto">
+                                                <button onClick={() => handleEditFile(file)} className="flex-1 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-xl font-bold text-xs">Edit</button>
+                                                <button onClick={() => setDeleteConfirm({type: 'file', id: file.id})} className="w-10 h-10 flex items-center justify-center bg-red-50 dark:bg-red-900/20 text-red-500 dark:text-red-400 rounded-xl"><Trash2 size={16} /></button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
 
-                            {activeTab === 'settings' && (
-                                <motion.div key="set" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-2xl mx-auto bg-white dark:bg-[#1C1C1E] p-8 rounded-3xl shadow-ios border border-white/5">
-                                    <h3 className="font-bold text-2xl mb-6 dark:text-white">Config</h3>
-                                    <div className="space-y-6">
-                                        <div className="bg-gray-50 dark:bg-black/50 p-4 rounded-2xl space-y-4">
-                                            <h4 className="font-bold text-gray-500 text-sm">Interface</h4>
-                                            <div><label className="block text-xs font-bold text-gray-400 mb-1 ml-1">App Name</label><input className="w-full bg-white dark:bg-[#1C1C1E] p-3 rounded-xl text-sm font-medium outline-none dark:text-white" value={settings.appName} onChange={e => setSettings({...settings, appName: e.target.value})} placeholder="File Share Pro" /></div>
-                                            <div><label className="block text-xs font-bold text-gray-400 mb-1 ml-1">Hero Title</label><input className="w-full bg-white dark:bg-[#1C1C1E] p-3 rounded-xl text-sm font-medium outline-none dark:text-white" value={settings.heroTitle} onChange={e => setSettings({...settings, heroTitle: e.target.value})} placeholder="Premium Files" /></div>
-                                            <div><label className="block text-xs font-bold text-gray-400 mb-1 ml-1">Hero Subtitle</label><input className="w-full bg-white dark:bg-[#1C1C1E] p-3 rounded-xl text-sm font-medium outline-none dark:text-white" value={settings.heroSubtitle} onChange={e => setSettings({...settings, heroSubtitle: e.target.value})} placeholder="Unlock exclusive content..." /></div>
+                        {activeTab === 'categories' && (
+                            <div className="max-w-2xl mx-auto bg-white dark:bg-[#1C1C1E] p-8 rounded-3xl shadow-ios border border-white/5 fade-in">
+                                <h3 className="font-bold text-2xl mb-6 dark:text-white">Categories</h3>
+                                <div className="flex gap-3 mb-8">
+                                    <input className="flex-1 bg-gray-50 dark:bg-black/50 p-4 rounded-2xl outline-none dark:text-white" placeholder="Name" value={newCatName} onChange={e => setNewCatName(e.target.value)} />
+                                    <button onClick={addCategory} className="bg-black dark:bg-white text-white dark:text-black px-6 rounded-2xl font-bold"><Plus/></button>
+                                </div>
+                                <div className="space-y-2">
+                                    {categories.map(cat => (
+                                        <div key={cat.id} className="flex justify-between items-center p-4 bg-gray-50 dark:bg-black/30 rounded-2xl">
+                                            <span className="font-medium dark:text-white">{cat.name}</span>
+                                            <button onClick={() => setDeleteConfirm({type: 'cat', id: cat.id})} className="text-red-500 bg-white dark:bg-[#1C1C1E] p-2 rounded-xl shadow-sm"><Trash2 size={16}/></button>
                                         </div>
-                                        <div className="bg-gray-50 dark:bg-black/50 p-4 rounded-2xl space-y-4">
-                                            <h4 className="font-bold text-gray-500 text-sm">Monetag Integration</h4>
-                                            <div><label className="block text-xs font-bold text-gray-400 mb-1 ml-1">Zone ID</label><input className="w-full bg-white dark:bg-[#1C1C1E] p-3 rounded-xl font-mono text-sm outline-none dark:text-white" value={settings.monetagZoneId} onChange={e => setSettings({...settings, monetagZoneId: e.target.value})} /></div>
-                                            <div><label className="block text-xs font-bold text-gray-400 mb-1 ml-1">Script URL</label><input className="w-full bg-white dark:bg-[#1C1C1E] p-3 rounded-xl font-mono text-sm outline-none dark:text-white" value={settings.monetagScriptUrl} onChange={e => setSettings({...settings, monetagScriptUrl: e.target.value})} /></div>
-                                        </div>
-                                        <button onClick={saveSettings} className="w-full bg-black dark:bg-white text-white dark:text-black py-4 rounded-2xl font-bold shadow-lg hover:scale-[1.02] transition-transform">Save Changes</button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {activeTab === 'settings' && (
+                            <div className="max-w-2xl mx-auto bg-white dark:bg-[#1C1C1E] p-8 rounded-3xl shadow-ios border border-white/5 fade-in">
+                                <h3 className="font-bold text-2xl mb-6 dark:text-white">Config</h3>
+                                <div className="space-y-6">
+                                    <div className="bg-gray-50 dark:bg-black/50 p-4 rounded-2xl space-y-4">
+                                        <h4 className="font-bold text-gray-500 text-sm">Interface</h4>
+                                        <input className="w-full bg-white dark:bg-[#1C1C1E] p-3 rounded-xl text-sm outline-none dark:text-white" value={settings.appName} onChange={e => setSettings({...settings, appName: e.target.value})} placeholder="File Share Pro" />
+                                        <input className="w-full bg-white dark:bg-[#1C1C1E] p-3 rounded-xl text-sm outline-none dark:text-white" value={settings.heroTitle} onChange={e => setSettings({...settings, heroTitle: e.target.value})} placeholder="Premium Files" />
+                                        <input className="w-full bg-white dark:bg-[#1C1C1E] p-3 rounded-xl text-sm outline-none dark:text-white" value={settings.heroSubtitle} onChange={e => setSettings({...settings, heroSubtitle: e.target.value})} placeholder="Unlock exclusive content..." />
                                     </div>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
+                                    <div className="bg-gray-50 dark:bg-black/50 p-4 rounded-2xl space-y-4">
+                                        <h4 className="font-bold text-gray-500 text-sm">Monetag</h4>
+                                        <input className="w-full bg-white dark:bg-[#1C1C1E] p-3 rounded-xl font-mono text-sm outline-none dark:text-white" value={settings.monetagZoneId} onChange={e => setSettings({...settings, monetagZoneId: e.target.value})} placeholder="Zone ID" />
+                                        <input className="w-full bg-white dark:bg-[#1C1C1E] p-3 rounded-xl font-mono text-sm outline-none dark:text-white" value={settings.monetagScriptUrl} onChange={e => setSettings({...settings, monetagScriptUrl: e.target.value})} placeholder="Script URL" />
+                                    </div>
+                                    <button onClick={saveSettings} className="w-full bg-black dark:bg-white text-white dark:text-black py-4 rounded-2xl font-bold hover:opacity-90">Save Changes</button>
+                                </div>
+                            </div>
+                        )}
                     </main>
                     
-                    <AnimatePresence>
-                        {deleteConfirm && (
-                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-6">
-                                <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} className="bg-white dark:bg-[#1C1C1E] p-6 rounded-3xl w-full max-w-sm text-center shadow-2xl border border-white/10">
-                                    <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-full flex items-center justify-center mx-auto mb-4"><AlertTriangle size={32} /></div>
-                                    <h3 className="font-bold text-xl mb-2 dark:text-white">Confirm Deletion</h3>
-                                    <p className="text-gray-500 dark:text-gray-400 mb-6">This cannot be undone.</p>
-                                    <div className="flex gap-3">
-                                        <button onClick={() => setDeleteConfirm(null)} className="flex-1 py-3 bg-gray-100 dark:bg-white/10 rounded-xl font-bold dark:text-white hover:bg-gray-200 dark:hover:bg-white/20 transition-colors">Cancel</button>
-                                        <button onClick={executeDelete} className="flex-1 py-3 bg-red-600 text-white rounded-xl font-bold shadow-lg shadow-red-600/30 hover:bg-red-700 transition-colors">Delete</button>
-                                    </div>
-                                </motion.div>
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
+                    {deleteConfirm && (
+                        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-6 fade-in">
+                            <div className="bg-white dark:bg-[#1C1C1E] p-6 rounded-3xl w-full max-w-sm text-center shadow-2xl border border-white/10">
+                                <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-full flex items-center justify-center mx-auto mb-4"><AlertTriangle size={32} /></div>
+                                <h3 className="font-bold text-xl mb-2 dark:text-white">Confirm</h3>
+                                <p className="text-gray-500 dark:text-gray-400 mb-6">Delete this item?</p>
+                                <div className="flex gap-3">
+                                    <button onClick={() => setDeleteConfirm(null)} className="flex-1 py-3 bg-gray-100 dark:bg-white/10 rounded-xl font-bold dark:text-white">Cancel</button>
+                                    <button onClick={executeDelete} className="flex-1 py-3 bg-red-600 text-white rounded-xl font-bold">Delete</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
             );
         };
