@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en" class="light">
 <head>
@@ -44,17 +45,17 @@
       #loading-overlay { position: fixed; inset: 0; background: #000; z-index: 50; display: flex; align-items: center; justify-content: center; color: white; transition: opacity 0.5s; }
     </style>
 
-    <!-- Import Map: Using ESM.SH for consistent module resolution -->
+    <!-- Import Map: Using Google CDN for Firebase to prevent 'Service Not Available' errors -->
     <script type="importmap">
     {
       "imports": {
         "react": "https://esm.sh/react@18.2.0",
         "react-dom/client": "https://esm.sh/react-dom@18.2.0/client?deps=react@18.2.0",
         "lucide-react": "https://esm.sh/lucide-react@0.344.0?deps=react@18.2.0",
-        "firebase/app": "https://esm.sh/firebase@10.8.1/app",
-        "firebase/auth": "https://esm.sh/firebase@10.8.1/auth",
-        "firebase/firestore": "https://esm.sh/firebase@10.8.1/firestore",
-        "firebase/storage": "https://esm.sh/firebase@10.8.1/storage"
+        "firebase/app": "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js",
+        "firebase/auth": "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js",
+        "firebase/firestore": "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js",
+        "firebase/storage": "https://www.gstatic.com/firebasejs/10.8.1/firebase-storage.js"
       }
     }
     </script>
@@ -78,8 +79,9 @@
         window.onerror = function(msg, url, line, col, error) {
             const div = document.getElementById('error-display');
             div.style.display = 'block';
-            div.innerHTML = `<strong>App Error:</strong> ${msg}<br><small>Please refresh.</small>`;
-            document.getElementById('loading-overlay').style.display = 'none';
+            div.innerHTML = `<strong>App Error:</strong> ${msg}<br><small>Check console for details.</small>`;
+            const overlay = document.getElementById('loading-overlay');
+            if(overlay) overlay.style.display = 'none';
             return false;
         };
     </script>
@@ -103,16 +105,23 @@
             appId: "1:393620302230:web:bd87f2af83e235a95395b7"
         };
 
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
-        
-        // Safe Storage Initialization
-        let storage = null;
+        // Safe Initialization
+        let app, db, auth, storage;
+        try {
+            app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            auth = getAuth(app);
+        } catch (e) {
+            console.error("Critical Firebase Init Error:", e);
+            document.getElementById('error-display').style.display = 'block';
+            document.getElementById('error-display').innerHTML = `<strong>Firebase Error:</strong> ${e.message}`;
+        }
+
+        // Try Storage Separately (to prevent full crash if storage is not enabled)
         try {
             storage = getStorage(app);
         } catch (e) {
-            console.warn("Firebase Storage could not be initialized:", e);
+            console.warn("Storage not available:", e);
         }
         
         const ADMIN_UID = "ezx6k9JhkPbqbq9uEEF2anZNd2I3";
@@ -146,6 +155,7 @@
             });
 
             useEffect(() => {
+                if (!auth) return;
                 const unsubscribe = onAuthStateChanged(auth, (u) => {
                     setUser(u);
                     setLoading(false);
@@ -185,6 +195,7 @@
             }, [fileForm.imageUrl]);
 
             const fetchData = async () => {
+                if (!db) return;
                 try {
                     const catSnap = await getDocs(query(collection(db, "categories"), orderBy("order")));
                     setCategories(catSnap.docs.map(d => ({ id: d.id, ...d.data() })));
@@ -197,6 +208,7 @@
 
             const handleLogin = async (e) => {
                 e.preventDefault();
+                if (!auth) return alert("Auth service unavailable");
                 setLoadingAuth(true);
                 try { await signInWithEmailAndPassword(auth, email, password); } 
                 catch (err) { alert("Access Denied"); } finally { setLoadingAuth(false); }
@@ -204,6 +216,7 @@
 
             const handleFileSubmit = async (e) => {
                 e.preventDefault();
+                if (!db) return;
                 try {
                     if (isEditing && editingId) await updateDoc(doc(db, "files", editingId), fileForm);
                     else await addDoc(collection(db, "files"), fileForm);
@@ -213,7 +226,7 @@
             };
 
             const executeDelete = async () => {
-                if (!deleteConfirm) return;
+                if (!deleteConfirm || !db) return;
                 try {
                     if (deleteConfirm.type === 'file') await deleteDoc(doc(db, "files", deleteConfirm.id));
                     else await deleteDoc(doc(db, "categories", deleteConfirm.id));
@@ -223,7 +236,7 @@
             };
 
             const addCategory = async () => {
-                if (!newCatName) return;
+                if (!newCatName || !db) return;
                 await addDoc(collection(db, "categories"), { name: newCatName, order: categories.length + 1 });
                 setNewCatName('');
                 fetchData();
@@ -267,6 +280,7 @@
             };
 
             const saveSettings = async () => {
+                if (!db) return;
                 await setDoc(doc(db, "settings", "general"), settings);
                 alert("Saved!");
             };

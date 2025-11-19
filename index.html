@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en" class="light">
 <head>
@@ -35,15 +36,19 @@
       .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
       
       #root { min-height: 100vh; }
-      #loading-fallback { position: fixed; inset: 0; display: flex; justify-content: center; align-items: center; background: #F2F2F7; z-index: 9999; }
+      #loading-fallback { position: fixed; inset: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; background: #F2F2F7; z-index: 9999; transition: opacity 0.5s; }
       .dark #loading-fallback { background: #000; }
+      
+      .spinner { width: 40px; height: 40px; border: 4px solid rgba(59, 130, 246, 0.3); border-radius: 50%; border-top-color: #3b82f6; animation: spin 1s ease-in-out infinite; }
+      @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 
-    <!-- Import Map: CLEAN & STABLE (Strictly React 18) -->
+    <!-- Import Map: FIXED & STABLE (Strictly React 18 via esm.sh) -->
     <script type="importmap">
 {
   "imports": {
     "react": "https://esm.sh/react@18.2.0",
+    "react-dom": "https://esm.sh/react-dom@18.2.0?deps=react@18.2.0",
     "react-dom/client": "https://esm.sh/react-dom@18.2.0/client?deps=react@18.2.0",
     "react-router-dom": "https://esm.sh/react-router-dom@6.22.3?deps=react@18.2.0,react-dom@18.2.0",
     "framer-motion": "https://esm.sh/framer-motion@10.18.0?deps=react@18.2.0,react-dom@18.2.0",
@@ -64,7 +69,8 @@
 <body class="bg-[#F2F2F7] dark:bg-black text-slate-900 dark:text-white transition-colors duration-300">
     
     <div id="loading-fallback">
-        <div class="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full"></div>
+        <div class="spinner mb-4"></div>
+        <p class="text-gray-500 font-medium text-sm animate-pulse">Loading App...</p>
     </div>
     
     <div id="root"></div>
@@ -92,9 +98,16 @@
         };
 
         // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
+        let app, db, auth;
+        try {
+            app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            auth = getAuth(app);
+        } catch(e) {
+            console.error("Firebase Init Error", e);
+            // Alert user but don't crash entirely if possible
+            alert("Connection Error. Please refresh.");
+        }
 
         // --- TRANSLATIONS ---
         const translations = {
@@ -408,7 +421,11 @@
                     
                     setTimeout(() => {
                         setLoading(false);
-                        document.getElementById('loading-fallback').style.display = 'none';
+                        const loader = document.getElementById('loading-fallback');
+                        if(loader) {
+                            loader.style.opacity = '0';
+                            setTimeout(() => loader.style.display = 'none', 500);
+                        }
                     }, 2000);
                 };
                 init();
