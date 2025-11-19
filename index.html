@@ -39,19 +39,18 @@
       .dark #loading-fallback { background: #000; }
     </style>
 
-    <!-- Import Map: CLEAN & STABLE (Only React 18) -->
+    <!-- Import Map: CLEAN & STABLE (Strictly React 18) -->
     <script type="importmap">
 {
   "imports": {
     "react": "https://esm.sh/react@18.2.0",
-    "react-dom": "https://esm.sh/react-dom@18.2.0?deps=react@18.2.0",
     "react-dom/client": "https://esm.sh/react-dom@18.2.0/client?deps=react@18.2.0",
     "react-router-dom": "https://esm.sh/react-router-dom@6.22.3?deps=react@18.2.0,react-dom@18.2.0",
     "framer-motion": "https://esm.sh/framer-motion@10.18.0?deps=react@18.2.0,react-dom@18.2.0",
     "lucide-react": "https://esm.sh/lucide-react@0.344.0?deps=react@18.2.0",
-    "firebase/app": "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js",
-    "firebase/auth": "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js",
-    "firebase/firestore": "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js",
+    "firebase/app": "https://esm.sh/firebase@10.8.1/app",
+    "firebase/auth": "https://esm.sh/firebase@10.8.1/auth",
+    "firebase/firestore": "https://esm.sh/firebase@10.8.1/firestore",
     "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
     "react/": "https://aistudiocdn.com/react@^19.2.0/",
     "firebase/": "https://aistudiocdn.com/firebase@^12.6.0/"
@@ -379,7 +378,7 @@
             const [loading, setLoading] = useState(true);
             const [settings, setSettings] = useState({
                 id: 'general', monetagZoneId: "10174286", monetagScriptUrl: "//libtl.com/sdk.js",
-                appName: "File Share", heroTitle: "Premium Files", heroSubtitle: "Unlock exclusive content freely"
+                appName: "File Share Pro", heroTitle: "Premium Files", heroSubtitle: "Unlock exclusive content freely"
             });
 
             const injectScript = (url, zone) => {
@@ -399,7 +398,7 @@
                         const docSnap = await getDoc(docRef);
                         if (docSnap.exists()) {
                             const data = docSnap.data();
-                            const merged = { ...settings, ...data, appName: data.appName || "File Share" };
+                            const merged = { ...settings, ...data, appName: data.appName || "File Share Pro" };
                             setSettings(merged);
                             injectScript(merged.monetagScriptUrl || "//libtl.com/sdk.js", merged.monetagZoneId || "10174286");
                         } else {
