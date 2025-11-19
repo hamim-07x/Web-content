@@ -43,13 +43,13 @@
 <script type="importmap">
 {
   "imports": {
-    "react/": "https://aistudiocdn.com/react@^19.2.0/",
     "react": "https://aistudiocdn.com/react@^19.2.0",
     "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
     "firebase/": "https://aistudiocdn.com/firebase@^12.6.0/",
-    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.554.0",
     "react-router-dom": "https://aistudiocdn.com/react-router-dom@^7.9.6",
-    "framer-motion": "https://aistudiocdn.com/framer-motion@^12.23.24"
+    "framer-motion": "https://aistudiocdn.com/framer-motion@^12.23.24",
+    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.554.0"
   }
 }
 </script>
@@ -70,11 +70,13 @@
     </script>
 
     <script type="text/babel" data-type="module">
-        // Using consistent ESM imports to prevent conflicts
+        // --- IMPORTS (Fixed for Stability) ---
+        // Using React 18 via ESM.SH to ensure compatibility
         import React, { useState, useEffect, useRef } from 'https://esm.sh/react@18.2.0';
         import { createRoot } from 'https://esm.sh/react-dom@18.2.0/client';
-        import { motion, AnimatePresence } from 'https://esm.sh/framer-motion@10.16.4?deps=react@18.2.0,react-dom@18.2.0';
-        import { Search, Download, Lock, Menu, Globe, PlayCircle, Link as LinkIcon, Clock, Sparkles, X, ChevronRight, Send, Moon, Sun, Image as ImageIcon } from 'https://esm.sh/lucide-react@0.294.0?deps=react@18.2.0';
+        import { motion, AnimatePresence } from 'https://esm.sh/framer-motion@10.18.0?deps=react@18.2.0,react-dom@18.2.0';
+        import { HashRouter, Routes, Route, Navigate } from 'https://esm.sh/react-router-dom@6.22.3?deps=react@18.2.0,react-dom@18.2.0';
+        import { Search, Download, Lock, Menu, Globe, PlayCircle, Link as LinkIcon, Clock, Sparkles, X, ChevronRight, Send, Moon, Sun, Image as ImageIcon } from 'https://esm.sh/lucide-react@0.344.0?deps=react@18.2.0';
         
         // Firebase Imports
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
@@ -435,7 +437,12 @@
                             </motion.div>
                         </motion.div>
                     ) : (
-                        <UserView settings={settings} />
+                        <HashRouter>
+                           <Routes>
+                              <Route path="/" element={<UserView settings={settings} />} />
+                              <Route path="*" element={<Navigate to="/" replace />} />
+                           </Routes>
+                        </HashRouter>
                     )}
                 </AnimatePresence>
             );
