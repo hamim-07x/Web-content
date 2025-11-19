@@ -1,9 +1,11 @@
 <!DOCTYPE html>
 <html lang="en" class="light">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>File Share</title>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>File Share Pro</title>
+    
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
@@ -11,81 +13,418 @@
         theme: {
           extend: {
             colors: {
-              ios: {
-                bg: '#F2F2F7',
-                card: '#FFFFFF',
-                blue: '#007AFF',
-                red: '#FF3B30',
-                green: '#34C759',
-                gray: '#8E8E93',
-                separator: '#C6C6C8',
-                dark: '#000000',
-                darkCard: '#1C1C1E',
-                telegram: '#229ED9'
-              }
+              ios: { bg: '#F2F2F7', card: '#FFFFFF', dark: '#000000', darkCard: '#1C1C1E' }
             },
-            fontFamily: {
-              sans: ['-apple-system', 'BlinkMacSystemFont', 'Inter', 'sans-serif'],
-            },
-            boxShadow: {
-              'ios': '0 4px 20px rgba(0, 0, 0, 0.05)',
-              'ios-hover': '0 8px 30px rgba(0, 0, 0, 0.12)',
-              'glow': '0 0 20px rgba(0, 122, 255, 0.4)',
-            }
+            fontFamily: { sans: ['Inter', '-apple-system', 'sans-serif'] },
+            boxShadow: { 'ios': '0 4px 20px rgba(0, 0, 0, 0.05)', 'ios-hover': '0 8px 30px rgba(0, 0, 0, 0.12)', 'glow': '0 0 20px rgba(59, 130, 246, 0.5)' }
           },
         },
       }
     </script>
+
+    <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
     <style>
-      body { 
-        font-family: '-apple-system', 'BlinkMacSystemFont', 'Inter', sans-serif; 
-        -webkit-font-smoothing: antialiased;
-        -moz-osx-font-smoothing: grayscale;
-        overscroll-behavior-y: none;
-      }
-      
-      /* Smooth transitions for dark mode */
-      body, div, button, input, select {
-        transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
-      }
-
-      ::-webkit-scrollbar {
-        width: 0px;
-        background: transparent;
-      }
-      
-      * {
-        -webkit-tap-highlight-color: transparent;
-      }
-
-      .glass {
-        background: rgba(255, 255, 255, 0.7);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.3);
-      }
-
-      .dark .glass {
-        background: rgba(28, 28, 30, 0.7);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-      }
+      body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; overscroll-behavior-y: none; }
+      .dark body { background-color: #000000; }
+      .glass { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-bottom: 1px solid rgba(0,0,0,0.05); }
+      .dark .glass { background: rgba(28, 28, 30, 0.8); border-bottom: 1px solid rgba(255,255,255,0.1); }
+      ::-webkit-scrollbar { width: 0px; background: transparent; }
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
-  <script type="importmap">
+
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script type="importmap">
 {
   "imports": {
-    "react/": "https://aistudiocdn.com/react@^19.2.0/",
-    "react": "https://aistudiocdn.com/react@^19.2.0",
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
-    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.554.0",
     "react-router-dom": "https://aistudiocdn.com/react-router-dom@^7.9.6",
     "firebase/": "https://aistudiocdn.com/firebase@^12.6.0/",
-    "framer-motion": "https://aistudiocdn.com/framer-motion@^11.0.8"
+    "framer-motion": "https://aistudiocdn.com/framer-motion@^12.23.24",
+    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.554.0",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/"
   }
 }
 </script>
 </head>
-  <body class="bg-[#F2F2F7] dark:bg-black text-slate-900 dark:text-white">
+<body class="bg-[#F2F2F7] dark:bg-black text-slate-900 dark:text-white transition-colors duration-300">
+    
     <div id="root"></div>
-  </body>
+
+    <script type="text/babel" data-type="module">
+        import React, { useState, useEffect, useRef } from 'https://esm.sh/react@18.2.0';
+        import { createRoot } from 'https://esm.sh/react-dom@18.2.0/client';
+        import { motion, AnimatePresence } from 'https://esm.sh/framer-motion@10.16.4?deps=react@18.2.0,react-dom@18.2.0';
+        import { Search, Download, Lock, Menu, Globe, PlayCircle, Link as LinkIcon, Clock, Sparkles, X, ChevronRight, Send, Moon, Sun, Image as ImageIcon } from 'https://esm.sh/lucide-react@0.294.0?deps=react@18.2.0';
+        
+        // Firebase Imports
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, collection, getDocs, doc, getDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        // --- CONFIGURATION ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyDWubQGHaj-ptTHy14OmObC2nvtk274Xr4",
+            authDomain: "eran-pro-mini.firebaseapp.com",
+            projectId: "eran-pro-mini",
+            storageBucket: "eran-pro-mini.firebasestorage.app",
+            messagingSenderId: "393620302230",
+            appId: "1:393620302230:web:bd87f2af83e235a95395b7"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        // --- TRANSLATIONS ---
+        const translations = {
+            en: {
+                searchPlaceholder: "Search files...", availableFiles: "Library", all: "All", download: "Download", subscribe: "Subscribe", unlock: "Unlock",
+                watchAd: "Ads", step: "Step", of: "of", completed: "Ready", wait: "Wait", sec: "s", noFiles: "No content found.",
+                changeLang: "Language", chooseLang: "Select Language", english: "English", bangla: "বাংলা",
+                adError: "Ad connection failed. Please retry.", adLoading: "Loading...", pleaseWait: "Processing", nightMode: "Night Mode", lightMode: "Light Mode"
+            },
+            bn: {
+                searchPlaceholder: "ফাইল খুঁজুন...", availableFiles: "লাইব্রেরি", all: "সব", download: "ডাউনলোড", subscribe: "জয়েন করুন", unlock: "আনলক",
+                watchAd: "বিজ্ঞাপন", step: "ধাপ", of: "এর", completed: "প্রস্তুত", wait: "অপেক্ষা", sec: "সে", noFiles: "কোনো কন্টেন্ট পাওয়া যায়নি।",
+                changeLang: "ভাষা", chooseLang: "ভাষা নির্বাচন করুন", english: "English", bangla: "বাংলা",
+                adError: "বিজ্ঞাপন সংযোগ ব্যর্থ হয়েছে। আবার চেষ্টা করুন।", adLoading: "লোড হচ্ছে...", pleaseWait: "প্রসেসিং", nightMode: "নাইট মোড", lightMode: "লাইট মোড"
+            }
+        };
+
+        // --- COMPONENTS ---
+
+        const UserView = ({ settings }) => {
+            const [categories, setCategories] = useState([]);
+            const [files, setFiles] = useState([]);
+            const [activeCategory, setActiveCategory] = useState('All');
+            const [searchTerm, setSearchTerm] = useState('');
+            const [showLangModal, setShowLangModal] = useState(true);
+            
+            const [unlockingId, setUnlockingId] = useState(null);
+            const [adsProgress, setAdsProgress] = useState({}); 
+            const [unlockedFiles, setUnlockedFiles] = useState([]);
+            
+            const [processingId, setProcessingId] = useState(null);
+            const [processingTime, setProcessingTime] = useState(0);
+            const [lang, setLang] = useState('en');
+            const [isMenuOpen, setIsMenuOpen] = useState(false);
+            const [darkMode, setDarkMode] = useState(false);
+            
+            const processingTimerRef = useRef(null);
+            const T = translations[lang];
+
+            const appName = settings.appName || "File Share";
+            const heroTitle = settings.heroTitle || "Premium Files";
+            const heroSubtitle = settings.heroSubtitle || "Unlock exclusive content freely";
+            const zoneId = settings.monetagZoneId || "10174286";
+
+            useEffect(() => {
+                const savedLang = localStorage.getItem('appLanguage');
+                if (savedLang) { setLang(savedLang); setShowLangModal(false); }
+
+                const savedUnlocked = JSON.parse(localStorage.getItem('unlockedFiles') || '[]');
+                setUnlockedFiles(savedUnlocked);
+
+                const savedTheme = localStorage.getItem('theme');
+                if (savedTheme === 'dark') { setDarkMode(true); document.documentElement.classList.add('dark'); }
+                else { document.documentElement.classList.remove('dark'); }
+
+                const loadData = async () => {
+                    try {
+                        const catSnap = await getDocs(query(collection(db, "categories"), orderBy("order")));
+                        setCategories(catSnap.docs.map(d => ({ id: d.id, ...d.data() })));
+                        const fileSnap = await getDocs(collection(db, "files"));
+                        setFiles(fileSnap.docs.map(d => ({ id: d.id, ...d.data() })));
+                    } catch (err) { console.error(err); }
+                };
+                loadData();
+
+                return () => { if (processingTimerRef.current) clearInterval(processingTimerRef.current); };
+            }, []);
+
+            const toggleDarkMode = () => {
+                const newMode = !darkMode;
+                setDarkMode(newMode);
+                localStorage.setItem('theme', newMode ? 'dark' : 'light');
+                if (newMode) document.documentElement.classList.add('dark');
+                else document.documentElement.classList.remove('dark');
+            };
+
+            const handleLanguageSelect = (l) => {
+                setLang(l); localStorage.setItem('appLanguage', l); setShowLangModal(false); setIsMenuOpen(false);
+            };
+
+            const filteredFiles = files.filter(file => {
+                const matchesSearch = file.title.toLowerCase().includes(searchTerm.toLowerCase()) || file.subtitle?.toLowerCase().includes(searchTerm.toLowerCase());
+                const matchesCategory = activeCategory === 'All' || file.categoryId === activeCategory;
+                return matchesSearch && matchesCategory;
+            });
+
+            const markAsUnlocked = (fileId) => {
+                const newUnlocked = [...unlockedFiles, fileId];
+                setUnlockedFiles(newUnlocked);
+                localStorage.setItem('unlockedFiles', JSON.stringify(newUnlocked));
+            };
+
+            const handleUnlock = async (file) => {
+                if (unlockedFiles.includes(file.id) || !file.isPremium) { window.open(file.downloadLink, '_blank'); return; }
+
+                const required = file.adsRequired || 1;
+                const current = adsProgress[file.id] || 0;
+
+                if (current >= required) { markAsUnlocked(file.id); window.open(file.downloadLink, '_blank'); return; }
+
+                setUnlockingId(file.id);
+
+                try {
+                    const funcName = `show_${zoneId}`;
+                    let attempts = 0;
+                    while (typeof window[funcName] !== 'function' && attempts < 5) {
+                        await new Promise(r => setTimeout(r, 200));
+                        attempts++;
+                    }
+
+                    if (typeof window[funcName] === 'function') {
+                        await window[funcName]();
+                    } else {
+                        console.warn("Ad fallback");
+                        await new Promise(resolve => setTimeout(resolve, 1500));
+                    }
+
+                    setUnlockingId(null);
+                    const nextCount = current + 1;
+                    
+                    // SMART LOGIC: If last ad, SKIP timer.
+                    if (nextCount >= required) {
+                        setAdsProgress(prev => ({ ...prev, [file.id]: nextCount }));
+                        markAsUnlocked(file.id);
+                    } else {
+                        // Intermediate step: Show timer
+                        setAdsProgress(prev => ({ ...prev, [file.id]: nextCount }));
+                        setProcessingId(file.id);
+                        setProcessingTime(10);
+                        
+                        if (processingTimerRef.current) clearInterval(processingTimerRef.current);
+                        processingTimerRef.current = setInterval(() => {
+                            setProcessingTime((prev) => {
+                                if (prev <= 1) {
+                                    if (processingTimerRef.current) clearInterval(processingTimerRef.current);
+                                    setProcessingId(null);
+                                    return 0;
+                                }
+                                return prev - 1;
+                            });
+                        }, 1000);
+                    }
+
+                } catch (e) {
+                    console.error(e);
+                    alert(T.adError);
+                    setUnlockingId(null);
+                }
+            };
+
+            const getButtonState = (file) => {
+                if (unlockedFiles.includes(file.id)) return 'download';
+                if (unlockingId === file.id) return 'loading';
+                if (processingId === file.id) return 'processing';
+                if (!file.isPremium) return 'download'; 
+                const required = file.adsRequired || 1;
+                const current = adsProgress[file.id] || 0;
+                if (current >= required) return 'download';
+                return 'ad';
+            };
+
+            return (
+                <div className="min-h-screen font-sans pb-20">
+                    {/* Header */}
+                    <motion.header initial={{ y: -100 }} animate={{ y: 0 }} className="fixed top-0 left-0 right-0 h-16 glass z-40 flex items-center justify-between px-5 shadow-sm">
+                        <div className="flex items-center gap-3">
+                            <div className="bg-gradient-to-br from-blue-500 to-indigo-600 p-2 rounded-xl shadow-lg shadow-blue-500/20"><Sparkles className="w-5 h-5 text-white" /></div>
+                            <h1 className="font-bold text-xl tracking-tight bg-gradient-to-r from-slate-900 to-slate-600 dark:from-white dark:to-gray-400 bg-clip-text text-transparent">{appName}</h1>
+                        </div>
+                        <button onClick={() => setIsMenuOpen(true)} className="w-10 h-10 rounded-full bg-gray-200/50 dark:bg-white/10 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-white/20 active:scale-90 transition-all"><Menu className="w-5 h-5 text-gray-700 dark:text-white" /></button>
+                    </motion.header>
+                    
+                    {/* Sidebar */}
+                    <AnimatePresence>
+                        {isMenuOpen && (
+                            <>
+                                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50" onClick={() => setIsMenuOpen(false)} />
+                                <motion.div initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} transition={{ type: 'spring', damping: 25, stiffness: 200 }} className="fixed top-0 right-0 bottom-0 w-72 bg-[#F2F2F7] dark:bg-[#1C1C1E] z-50 shadow-2xl p-6 flex flex-col gap-6 text-slate-900 dark:text-white">
+                                    <div className="flex justify-between items-center mb-4">
+                                        <h2 className="text-2xl font-bold">Menu</h2>
+                                        <button onClick={() => setIsMenuOpen(false)} className="p-2 bg-gray-200 dark:bg-white/10 rounded-full"><X className="w-5 h-5" /></button>
+                                    </div>
+                                    <div className="space-y-3">
+                                        <button onClick={toggleDarkMode} className="w-full flex items-center gap-4 p-4 bg-white dark:bg-black/50 rounded-2xl shadow-ios active:scale-95 transition-transform">
+                                            <div className={`p-2 rounded-lg text-white transition-colors ${darkMode ? 'bg-indigo-500' : 'bg-orange-400'}`}>{darkMode ? <Moon size={20}/> : <Sun size={20}/>}</div>
+                                            <span className="font-semibold">{darkMode ? T.lightMode : T.nightMode}</span>
+                                        </button>
+                                        <button onClick={() => setShowLangModal(true)} className="w-full flex items-center gap-4 p-4 bg-white dark:bg-black/50 rounded-2xl shadow-ios active:scale-95 transition-transform">
+                                            <div className="bg-green-500 p-2 rounded-lg text-white"><Globe size={20}/></div>
+                                            <span className="font-semibold">{T.changeLang}</span>
+                                            <ChevronRight className="ml-auto text-gray-400" size={18}/>
+                                        </button>
+                                    </div>
+                                </motion.div>
+                            </>
+                        )}
+                    </AnimatePresence>
+
+                    {/* Main Content */}
+                    <div className="pt-24 px-5 max-w-4xl mx-auto">
+                        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="mb-8">
+                            <h2 className="text-3xl font-extrabold mb-1 tracking-tight dark:text-white">{heroTitle}</h2>
+                            <p className="text-gray-500 dark:text-gray-400 font-medium mb-6">{heroSubtitle}</p>
+                            <div className="relative group">
+                                <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-300 to-purple-300 rounded-2xl opacity-30 group-hover:opacity-100 transition duration-500 blur"></div>
+                                <div className="relative bg-white dark:bg-[#1C1C1E] rounded-2xl shadow-ios flex items-center p-4 gap-3">
+                                    <Search className="w-5 h-5 text-gray-400" />
+                                    <input type="text" placeholder={T.searchPlaceholder} className="flex-1 bg-transparent outline-none text-lg placeholder:text-gray-400 font-medium text-slate-900 dark:text-white" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                                </div>
+                            </div>
+                        </motion.div>
+
+                        {/* Categories */}
+                        <div className="mb-8 overflow-x-auto no-scrollbar pb-2">
+                            <div className="flex gap-3">
+                                <button onClick={() => setActiveCategory('All')} className={`px-6 py-2.5 rounded-full font-bold text-sm transition-all shadow-sm ${activeCategory === 'All' ? 'bg-[#1C1C1E] dark:bg-white text-white dark:text-black scale-105' : 'bg-white dark:bg-[#1C1C1E] text-gray-500 dark:text-gray-400'}`}>{T.all}</button>
+                                {categories.map(cat => (
+                                    <button key={cat.id} onClick={() => setActiveCategory(cat.id)} className={`px-6 py-2.5 rounded-full font-bold text-sm transition-all shadow-sm whitespace-nowrap ${activeCategory === cat.id ? 'bg-[#1C1C1E] dark:bg-white text-white dark:text-black scale-105' : 'bg-white dark:bg-[#1C1C1E] text-gray-500 dark:text-gray-400'}`}>{cat.name}</button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Files */}
+                        <div className="grid gap-6 md:grid-cols-2">
+                            <AnimatePresence mode='popLayout'>
+                            {filteredFiles.map((file) => {
+                                const state = getButtonState(file);
+                                const required = file.adsRequired || 1;
+                                const current = adsProgress[file.id] || 0;
+                                const isSubscribe = file.actionType === 'subscribe';
+                                
+                                return (
+                                <motion.div key={file.id} layout initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9 }} className="bg-white dark:bg-[#1C1C1E] rounded-3xl p-4 shadow-ios hover:shadow-ios-hover transition-all border border-transparent dark:border-white/5 group">
+                                    <div className="aspect-[16/9] rounded-2xl overflow-hidden bg-gray-100 dark:bg-gray-800 mb-4 relative flex items-center justify-center">
+                                        <img src={file.imageUrl} alt={file.title} className="w-full h-full object-cover object-center transform group-hover:scale-105 transition-transform duration-700" onError={(e) => {e.target.style.display='none'; e.target.parentElement.classList.add('bg-gray-200', 'dark:bg-gray-800');}} />
+                                        <ImageIcon className="absolute text-gray-300 dark:text-gray-600 w-12 h-12 -z-10 opacity-50" />
+                                        {file.badgeText && <div className="absolute top-3 left-3 bg-white/90 dark:bg-black/80 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-extrabold tracking-wider uppercase shadow-sm text-slate-900 dark:text-white z-20">{file.badgeText}</div>}
+                                        {file.isPremium && !unlockedFiles.includes(file.id) && <div className="absolute top-3 right-3 bg-black/60 backdrop-blur-md text-white px-3 py-1 rounded-full flex items-center gap-1.5 text-xs font-bold z-20"><Lock size={12} /> {file.adsRequired || 1}</div>}
+                                    </div>
+
+                                    <div className="px-1">
+                                        <h3 className="text-lg font-bold leading-tight mb-1 text-slate-900 dark:text-white truncate">{file.title}</h3>
+                                        <p className="text-gray-500 dark:text-gray-400 text-sm font-medium mb-4 truncate">{file.subtitle}</p>
+
+                                        <div className="flex gap-3">
+                                            <motion.button whileTap={{ scale: 0.95 }} disabled={state === 'loading' || state === 'processing'} onClick={() => handleUnlock(file)} className={`flex-1 h-12 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg transition-all ${state === 'download' ? (isSubscribe ? 'bg-[#229ED9] text-white shadow-blue-400/30' : 'bg-green-500 text-white shadow-green-500/30') : state === 'ad' ? 'bg-blue-600 text-white shadow-blue-600/30' : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-300'}`}>
+                                                {state === 'loading' && <><Lock className="animate-pulse w-4 h-4"/> {T.adLoading}</>}
+                                                {state === 'processing' && <><Clock className="animate-spin w-4 h-4"/> {T.pleaseWait} {processingTime}s</>}
+                                                {state === 'download' && <>{isSubscribe ? <Send className="w-4 h-4"/> : <Download className="w-4 h-4"/>} {isSubscribe ? T.subscribe : T.download}</>}
+                                                {state === 'ad' && <><PlayCircle className="w-4 h-4"/> {T.watchAd} ({current}/{required})</>}
+                                            </motion.button>
+                                            {file.directLink && <motion.a whileTap={{ scale: 0.95 }} href={file.directLink} target="_blank" className="w-12 h-12 bg-gray-100 dark:bg-gray-800 rounded-xl flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-white/10 hover:text-blue-600 transition-colors"><LinkIcon size={20} /></motion.a>}
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            )})}
+                            </AnimatePresence>
+                            {filteredFiles.length === 0 && <div className="col-span-full text-center py-20 opacity-50"><p className="text-lg font-medium text-gray-500 dark:text-gray-400">{T.noFiles}</p></div>}
+                        </div>
+                    </div>
+                    
+                    <AnimatePresence>
+                    {showLangModal && (
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/40 backdrop-blur-md z-50 flex items-center justify-center p-6">
+                            <motion.div initial={{ scale: 0.8, y: 20 }} animate={{ scale: 1, y: 0 }} className="bg-white dark:bg-[#1C1C1E] rounded-3xl p-8 w-full max-w-sm shadow-2xl text-center border border-white/10">
+                                <div className="w-20 h-20 bg-blue-50 dark:bg-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-6 text-blue-600 dark:text-blue-400 shadow-inner"><Globe size={40} /></div>
+                                <h3 className="text-2xl font-bold mb-8 text-slate-900 dark:text-white">{T.chooseLang}</h3>
+                                <div className="flex flex-col gap-4">
+                                    <button onClick={() => handleLanguageSelect('en')} className="py-4 bg-[#F2F2F7] dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/20 rounded-2xl font-bold text-lg transition-colors dark:text-white">🇬🇧 {T.english}</button>
+                                    <button onClick={() => handleLanguageSelect('bn')} className="py-4 bg-[#F2F2F7] dark:bg-white/10 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-2xl font-bold text-lg transition-colors text-green-700 dark:text-green-400">🇧🇩 {T.bangla}</button>
+                                </div>
+                            </motion.div>
+                        </motion.div>
+                    )}
+                    </AnimatePresence>
+                </div>
+            );
+        };
+
+        // --- APP COMPONENT ---
+        const App = () => {
+            const [loading, setLoading] = useState(true);
+            const [settings, setSettings] = useState({
+                id: 'general', monetagZoneId: "10174286", monetagScriptUrl: "//libtl.com/sdk.js",
+                appName: "File Share", heroTitle: "Premium Files", heroSubtitle: "Unlock exclusive content freely"
+            });
+
+            useEffect(() => {
+                const init = async () => {
+                    try {
+                        const docRef = doc(db, "settings", "general");
+                        const docSnap = await getDoc(docRef);
+                        if (docSnap.exists()) {
+                            const data = docSnap.data();
+                            const merged = { ...settings, ...data, appName: data.appName || "File Share" };
+                            setSettings(merged);
+                            
+                            // Inject Script
+                            const oldScript = document.getElementById('monetag-script');
+                            if (oldScript) oldScript.remove();
+                            const script = document.createElement('script');
+                            script.id = 'monetag-script';
+                            script.src = merged.monetagScriptUrl || "//libtl.com/sdk.js";
+                            script.setAttribute('data-zone', merged.monetagZoneId || "10174286");
+                            script.setAttribute('data-sdk', `show_${merged.monetagZoneId || "10174286"}`);
+                            document.head.appendChild(script);
+                        } else {
+                            const script = document.createElement('script');
+                            script.src = "//libtl.com/sdk.js";
+                            script.setAttribute('data-zone', "10174286");
+                            script.setAttribute('data-sdk', "show_10174286");
+                            document.head.appendChild(script);
+                        }
+                    } catch (e) { console.error(e); }
+                    
+                    // Auth check just to trigger readiness
+                    onAuthStateChanged(auth, () => {
+                        setTimeout(() => setLoading(false), 2000);
+                    });
+                };
+                init();
+            }, []);
+
+            return (
+                <AnimatePresence mode="wait">
+                    {loading ? (
+                        <motion.div key="splash" initial={{ opacity: 1 }} exit={{ opacity: 0, filter: 'blur(15px)', scale: 1.05 }} transition={{ duration: 0.6 }} className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#F2F2F7] dark:bg-black overflow-hidden">
+                            <div className="absolute w-96 h-96 bg-blue-500/20 rounded-full blur-3xl opacity-50 animate-pulse"></div>
+                            <motion.div initial={{ scale: 0.5, opacity: 0, rotate: -10 }} animate={{ scale: 1, opacity: 1, rotate: 0 }} transition={{ type: "spring", damping: 12, stiffness: 100, duration: 1 }} className="relative mb-10 z-10">
+                                <div className="w-28 h-28 bg-black dark:bg-white rounded-[2rem] flex items-center justify-center shadow-2xl"><Sparkles className="w-12 h-12 text-white dark:text-black" /></div>
+                            </motion.div>
+                            <motion.h1 initial={{ y: 30, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.3, type: "spring" }} className="text-3xl font-black mb-4 tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-600 dark:from-white dark:to-gray-400 relative z-10">{settings.appName}</motion.h1>
+                            <motion.div className="h-1.5 bg-gray-200 dark:bg-gray-800 rounded-full w-48 overflow-hidden relative z-10">
+                                <motion.div initial={{ width: "0%" }} animate={{ width: "100%" }} transition={{ delay: 0.5, duration: 1.5, ease: "easeInOut" }} className="h-full bg-blue-500 rounded-full" />
+                            </motion.div>
+                        </motion.div>
+                    ) : (
+                        <UserView settings={settings} />
+                    )}
+                </AnimatePresence>
+            );
+        };
+
+        const root = createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
 </html>
