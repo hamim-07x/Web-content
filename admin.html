@@ -44,17 +44,17 @@
       #loading-overlay { position: fixed; inset: 0; background: #000; z-index: 50; display: flex; align-items: center; justify-content: center; color: white; transition: opacity 0.5s; }
     </style>
 
-    <!-- Import Map: Using Stable Google CDN for Firebase & ESM.SH for React -->
+    <!-- Import Map: Using ESM.SH for consistent module resolution -->
     <script type="importmap">
     {
       "imports": {
         "react": "https://esm.sh/react@18.2.0",
         "react-dom/client": "https://esm.sh/react-dom@18.2.0/client?deps=react@18.2.0",
         "lucide-react": "https://esm.sh/lucide-react@0.344.0?deps=react@18.2.0",
-        "firebase/app": "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js",
-        "firebase/auth": "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js",
-        "firebase/firestore": "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js",
-        "firebase/storage": "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js"
+        "firebase/app": "https://esm.sh/firebase@10.8.1/app",
+        "firebase/auth": "https://esm.sh/firebase@10.8.1/auth",
+        "firebase/firestore": "https://esm.sh/firebase@10.8.1/firestore",
+        "firebase/storage": "https://esm.sh/firebase@10.8.1/storage"
       }
     }
     </script>
@@ -106,8 +106,14 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
+        
+        // Safe Storage Initialization
         let storage = null;
-        try { storage = getStorage(app); } catch (e) { console.warn("Storage init failed", e); }
+        try {
+            storage = getStorage(app);
+        } catch (e) {
+            console.warn("Firebase Storage could not be initialized:", e);
+        }
         
         const ADMIN_UID = "ezx6k9JhkPbqbq9uEEF2anZNd2I3";
 
@@ -224,7 +230,10 @@
             };
 
             const handleImageUpload = async (e) => {
-                if (!storage) { alert("Storage unavailable."); return; }
+                if (!storage) { 
+                    alert("Storage unavailable. Please check Firebase config or use 'Link' mode."); 
+                    return; 
+                }
                 if (e.target.files && e.target.files[0]) {
                     setUploading(true);
                     try {
@@ -233,7 +242,10 @@
                         await uploadBytes(storageRef, file);
                         const url = await getDownloadURL(storageRef);
                         setFileForm(prev => ({ ...prev, imageUrl: url }));
-                    } catch (e) { alert("Upload failed"); } finally { setUploading(false); }
+                    } catch (e) { 
+                        console.error(e);
+                        alert("Upload failed: " + e.message); 
+                    } finally { setUploading(false); }
                 }
             };
 
@@ -241,7 +253,8 @@
                 setFileForm(file);
                 setEditingId(file.id);
                 setIsEditing(true);
-                setThumbMode(file.imageUrl.includes('firebasestorage') ? 'upload' : 'link');
+                // Fallback to 'link' if it's not a firebase url or if storage is broken
+                setThumbMode((file.imageUrl.includes('firebasestorage') && storage) ? 'upload' : 'link');
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             };
 

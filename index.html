@@ -39,11 +39,12 @@
       .dark #loading-fallback { background: #000; }
     </style>
 
-    <!-- Import Map: FIXED & STABLE -->
+    <!-- Import Map: CLEAN & STABLE (Only React 18) -->
     <script type="importmap">
 {
   "imports": {
     "react": "https://esm.sh/react@18.2.0",
+    "react-dom": "https://esm.sh/react-dom@18.2.0?deps=react@18.2.0",
     "react-dom/client": "https://esm.sh/react-dom@18.2.0/client?deps=react@18.2.0",
     "react-router-dom": "https://esm.sh/react-router-dom@6.22.3?deps=react@18.2.0,react-dom@18.2.0",
     "framer-motion": "https://esm.sh/framer-motion@10.18.0?deps=react@18.2.0,react-dom@18.2.0",
@@ -70,7 +71,7 @@
     <div id="root"></div>
 
     <script type="text/babel" data-type="module">
-        // --- IMPORTS using Import Map ---
+        // --- IMPORTS ---
         import React, { useState, useEffect, useRef } from 'react';
         import { createRoot } from 'react-dom/client';
         import { motion, AnimatePresence } from 'framer-motion';
@@ -176,7 +177,7 @@
             };
 
             const filteredFiles = files.filter(file => {
-                const matchesSearch = file.title.toLowerCase().includes(searchTerm.toLowerCase()) || file.subtitle?.toLowerCase().includes(searchTerm.toLowerCase());
+                const matchesSearch = file.title.toLowerCase().includes(searchTerm.toLowerCase()) || (file.subtitle && file.subtitle.toLowerCase().includes(searchTerm.toLowerCase()));
                 const matchesCategory = activeCategory === 'All' || file.categoryId === activeCategory;
                 return matchesSearch && matchesCategory;
             });
