@@ -34,54 +34,52 @@
       .no-scrollbar::-webkit-scrollbar { display: none; }
       .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
       
-      /* Crash Error Display */
-      #crash-report { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #1a1a1a; color: #ff5555; z-index: 9999; padding: 20px; overflow: auto; font-family: monospace; }
+      #root { min-height: 100vh; }
+      #loading-fallback { position: fixed; inset: 0; display: flex; justify-content: center; align-items: center; background: #F2F2F7; z-index: 9999; }
+      .dark #loading-fallback { background: #000; }
     </style>
 
-    <!-- Babel for JSX -->
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-<script type="importmap">
+    <!-- Import Map: Strictly Controlled Versions -->
+    <script type="importmap">
 {
   "imports": {
-    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react": "https://esm.sh/react@18.2.0",
+    "react-dom/client": "https://esm.sh/react-dom@18.2.0/client?deps=react@18.2.0",
+    "react-router-dom": "https://esm.sh/react-router-dom@6.22.3?deps=react@18.2.0,react-dom@18.2.0",
+    "framer-motion": "https://esm.sh/framer-motion@10.18.0?deps=react@18.2.0,react-dom@18.2.0",
+    "lucide-react": "https://esm.sh/lucide-react@0.344.0?deps=react@18.2.0",
+    "firebase/app": "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js",
+    "firebase/auth": "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js",
+    "firebase/firestore": "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js",
     "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
     "react/": "https://aistudiocdn.com/react@^19.2.0/",
-    "firebase/": "https://aistudiocdn.com/firebase@^12.6.0/",
-    "react-router-dom": "https://aistudiocdn.com/react-router-dom@^7.9.6",
-    "framer-motion": "https://aistudiocdn.com/framer-motion@^12.23.24",
-    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.554.0"
+    "firebase/": "https://aistudiocdn.com/firebase@^12.6.0/"
   }
 }
 </script>
+
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </head>
 <body class="bg-[#F2F2F7] dark:bg-black text-slate-900 dark:text-white transition-colors duration-300">
     
-    <div id="crash-report"></div>
+    <div id="loading-fallback">
+        <div class="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full"></div>
+    </div>
+    
     <div id="root"></div>
 
-    <script>
-        // Global Error Handler to debug crashes
-        window.onerror = function(msg, url, line, col, error) {
-            const div = document.getElementById('crash-report');
-            div.style.display = 'block';
-            div.innerHTML += `<h3>Application Error</h3><p>${msg}</p><p>Line: ${line}</p><hr>`;
-            return false;
-        };
-    </script>
-
     <script type="text/babel" data-type="module">
-        // --- IMPORTS (Fixed for Stability) ---
-        // Using React 18 via ESM.SH to ensure compatibility
-        import React, { useState, useEffect, useRef } from 'https://esm.sh/react@18.2.0';
-        import { createRoot } from 'https://esm.sh/react-dom@18.2.0/client';
-        import { motion, AnimatePresence } from 'https://esm.sh/framer-motion@10.18.0?deps=react@18.2.0,react-dom@18.2.0';
-        import { HashRouter, Routes, Route, Navigate } from 'https://esm.sh/react-router-dom@6.22.3?deps=react@18.2.0,react-dom@18.2.0';
-        import { Search, Download, Lock, Menu, Globe, PlayCircle, Link as LinkIcon, Clock, Sparkles, X, ChevronRight, Send, Moon, Sun, Image as ImageIcon } from 'https://esm.sh/lucide-react@0.344.0?deps=react@18.2.0';
+        // --- IMPORTS using Import Map ---
+        import React, { useState, useEffect, useRef } from 'react';
+        import { createRoot } from 'react-dom/client';
+        import { motion, AnimatePresence } from 'framer-motion';
+        import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
+        import { Search, Download, Lock, Menu, Globe, PlayCircle, Link as LinkIcon, Clock, Sparkles, X, ChevronRight, Send, Moon, Sun, Image as ImageIcon } from 'lucide-react';
         
-        // Firebase Imports
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore, collection, getDocs, doc, getDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { initializeApp } from "firebase/app";
+        import { getAuth, onAuthStateChanged } from "firebase/auth";
+        import { getFirestore, collection, getDocs, doc, getDoc, query, orderBy } from "firebase/firestore";
 
         // --- CONFIGURATION ---
         const firebaseConfig = {
@@ -93,15 +91,10 @@
             appId: "1:393620302230:web:bd87f2af83e235a95395b7"
         };
 
-        // Initialize Firebase safely
-        let app, db, auth;
-        try {
-            app = initializeApp(firebaseConfig);
-            db = getFirestore(app);
-            auth = getAuth(app);
-        } catch(e) {
-            console.error("Firebase Init Error", e);
-        }
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
 
         // --- TRANSLATIONS ---
         const translations = {
@@ -207,7 +200,6 @@
                 try {
                     const funcName = `show_${zoneId}`;
                     let attempts = 0;
-                    // Safety check to prevent infinite loop waiting
                     while (typeof window[funcName] !== 'function' && attempts < 10) {
                         await new Promise(r => setTimeout(r, 200));
                         attempts++;
@@ -223,12 +215,10 @@
                     setUnlockingId(null);
                     const nextCount = current + 1;
                     
-                    // SMART LOGIC: If last ad, SKIP timer.
                     if (nextCount >= required) {
                         setAdsProgress(prev => ({ ...prev, [file.id]: nextCount }));
                         markAsUnlocked(file.id);
                     } else {
-                        // Intermediate step: Show timer
                         setAdsProgress(prev => ({ ...prev, [file.id]: nextCount }));
                         setProcessingId(file.id);
                         setProcessingTime(10);
@@ -390,10 +380,8 @@
                 appName: "File Share", heroTitle: "Premium Files", heroSubtitle: "Unlock exclusive content freely"
             });
 
-            // Safe Script Injector that prevents duplicates (Prevents Crash)
             const injectScript = (url, zone) => {
-                if (document.getElementById('monetag-script')) return; // Already exists
-                
+                if (document.getElementById('monetag-script')) return; 
                 const script = document.createElement('script');
                 script.id = 'monetag-script';
                 script.src = url;
@@ -417,8 +405,10 @@
                         }
                     } catch (e) { console.error(e); }
                     
-                    // Wait briefly for splash screen effect
-                    setTimeout(() => setLoading(false), 2000);
+                    setTimeout(() => {
+                        setLoading(false);
+                        document.getElementById('loading-fallback').style.display = 'none';
+                    }, 2000);
                 };
                 init();
             }, []);
